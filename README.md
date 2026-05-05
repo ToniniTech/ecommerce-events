@@ -14,7 +14,7 @@ Sistema de microservicios e-commerce con arquitectura basada en eventos, comunic
 
 ## ¿Por qué este proyecto?
 
-La mayoría de los tutoriales de microservicios usan REST entre servicios — lo que crea acoplamiento oculto. Este proyecto demuestra cómo construir servicios que se comunican **sin conocerse entre sí**, tolerando fallos parciales sin afectar al sistema completo.
+La mayoría de los tutoriales de microservicios usan REST entre servicios, lo que crea acoplamiento oculto. Este proyecto demuestra cómo construir servicios que se comunican **sin conocerse entre sí**, tolerando fallos parciales sin afectar al sistema completo.
 
 Si Payment Service se cae, las órdenes siguen creándose. Cuando vuelve, procesa todos los eventos pendientes automáticamente. Eso es resiliencia real.
 
@@ -96,7 +96,7 @@ CLIENT (browser / Postman)
 
 **¿Por qué RabbitMQ y no REST entre servicios?**
 
-La comunicación HTTP síncrona crea acoplamiento temporal — si Payment Service cae, Order Service falla también. Con RabbitMQ, Order Service publica el evento y continúa independientemente. Los mensajes esperan en la queue hasta que Payment Service vuelva.
+La comunicación HTTP síncrona crea acoplamiento temporal, si Payment Service cae, Order Service falla también. Con RabbitMQ, Order Service publica el evento y continúa independientemente. Los mensajes esperan en la queue hasta que Payment Service vuelva.
 
 **¿Por qué una base de datos por servicio?**
 
@@ -104,7 +104,7 @@ Permite que cada servicio evolucione, escale y falle de forma completamente inde
 
 **¿Por qué JWT stateless y no sesiones?**
 
-En microservicios, las sesiones crean acoplamiento — todos los servicios necesitarían compartir el mismo store de sesiones. Con JWT, cada servicio valida el token localmente usando el secreto compartido. Sin llamadas HTTP al Auth Service por cada request.
+En microservicios, las sesiones crean acoplamiento, todos los servicios necesitarían compartir el mismo store de sesiones. Con JWT, cada servicio valida el token localmente usando el secreto compartido. Sin llamadas HTTP al Auth Service por cada request.
 
 **¿Por qué el cliente no envía el precio?**
 
