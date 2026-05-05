@@ -170,7 +170,7 @@ ecommerce-events/
 ```bash
 # 1. Clonar el repositorio
 git clone https://github.com/ToniniTech/Event-Driven-E-commerce.git
-cd ecommerce-events
+cd Event-Driven-E-commerce
 
 # 2. Levantar toda la infraestructura
 docker-compose up --build -d
