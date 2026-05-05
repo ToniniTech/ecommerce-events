@@ -169,7 +169,7 @@ ecommerce-events/
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/tu-usuario/ecommerce-events.git
+git clone https://github.com/ToniniTech/Event-Driven-E-commerce.git
 cd ecommerce-events
 
 # 2. Levantar toda la infraestructura
