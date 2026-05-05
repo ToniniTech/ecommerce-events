@@ -1,0 +1,271 @@
+version: '3.8'
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  Event-Driven E-Commerce — Docker Compose
+#
+#  Services:
+#    - rabbitmq             → Message broker
+#    - auth-db              → MySQL for Auth Service
+#    - order-db             → MySQL for Order Service
+#    - payment-db           → MySQL for Payment Service
+#    - notification-db      → MySQL for Notification Service
+#    - auth-service    :8084 → JWT register/login/refresh/validate
+#    - order-service   :8081 → REST API (requires JWT)
+#    - payment-service :8082 → Event consumer/publisher
+#    - notification-service :8083 → Event consumer
+#
+#  Auth flow:
+#    1. POST /api/auth/register  → get accessToken + refreshToken
+#    2. POST /api/orders  (Authorization: Bearer <accessToken>) → create order
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  # ─── RabbitMQ ──────────────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_VHOST: /
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./infrastructure/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - ecommerce-net
+
+  # ─── MySQL: Auth DB ────────────────────────────────────────────────────────
+  auth-db:
+    image: mysql:8.0
+    container_name: auth-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: auth_db
+      MYSQL_USER: authuser
+      MYSQL_PASSWORD: authpass
+    ports:
+      - "3310:3306"
+    volumes:
+      - auth_db_data:/var/lib/mysql
+      - ./infrastructure/mysql/auth-db-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "authuser", "-pauthpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - ecommerce-net
+
+  # ─── MySQL: Order DB ───────────────────────────────────────────────────────
+  order-db:
+    image: mysql:8.0
+    container_name: order-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: order_db
+      MYSQL_USER: orderuser
+      MYSQL_PASSWORD: orderpass
+    ports:
+      - "3307:3306"
+    volumes:
+      - order_db_data:/var/lib/mysql
+      - ./infrastructure/mysql/order-db-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "orderuser", "-porderpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - ecommerce-net
+
+  # ─── MySQL: Payment DB ─────────────────────────────────────────────────────
+  payment-db:
+    image: mysql:8.0
+    container_name: payment-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: payment_db
+      MYSQL_USER: paymentuser
+      MYSQL_PASSWORD: paymentpass
+    ports:
+      - "3308:3306"
+    volumes:
+      - payment_db_data:/var/lib/mysql
+      - ./infrastructure/mysql/payment-db-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "paymentuser", "-ppaymentpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - ecommerce-net
+
+  # ─── MySQL: Notification DB ────────────────────────────────────────────────
+  notification-db:
+    image: mysql:8.0
+    container_name: notification-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: notification_db
+      MYSQL_USER: notifuser
+      MYSQL_PASSWORD: notifpass
+    ports:
+      - "3309:3306"
+    volumes:
+      - notification_db_data:/var/lib/mysql
+      - ./infrastructure/mysql/notification-db-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "notifuser", "-pnotifpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - ecommerce-net
+
+  # ─── Auth Service ──────────────────────────────────────────────────────────
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8084:8084"
+    environment:
+      MYSQL_HOST: auth-db
+      MYSQL_USER: authuser
+      MYSQL_PASSWORD: authpass
+      JWT_SECRET: 3d8f2c1a9b4e7f0d5c2a8b3e6f1d4c7a0b5e8f2d1c4a7b0e3f6d9c2a5b8e1f4
+      JWT_EXPIRATION_MS: 86400000
+      JWT_REFRESH_MS: 604800000
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    restart: on-failure:5
+    networks:
+      - ecommerce-net
+
+  # ─── Order Service ─────────────────────────────────────────────────────────
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    container_name: order-service
+    ports:
+      - "8081:8081"
+    environment:
+      MYSQL_HOST: order-db
+      MYSQL_USER: orderuser
+      MYSQL_PASSWORD: orderpass
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      # Order Service calls Auth Service to validate JWT tokens
+      AUTH_SERVICE_URL: http://auth-service:8084
+      JWT_SECRET: 3d8f2c1a9b4e7f0d5c2a8b3e6f1d4c7a0b5e8f2d1c4a7b0e3f6d9c2a5b8e1f4
+    depends_on:
+      order-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    restart: on-failure:5
+    networks:
+      - ecommerce-net
+
+  # ─── Payment Service ───────────────────────────────────────────────────────
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    container_name: payment-service
+    ports:
+      - "8082:8082"
+    environment:
+      MYSQL_HOST: payment-db
+      MYSQL_USER: paymentuser
+      MYSQL_PASSWORD: paymentpass
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+    depends_on:
+      payment-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure:5
+    networks:
+      - ecommerce-net
+
+  # ─── Notification Service ──────────────────────────────────────────────────
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "8083:8083"
+    environment:
+      MYSQL_HOST: notification-db
+      MYSQL_USER: notifuser
+      MYSQL_PASSWORD: notifpass
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      MAIL_ENABLED: "false"
+    depends_on:
+      notification-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure:5
+    networks:
+      - ecommerce-net
+
+# ─── Networks ──────────────────────────────────────────────────────────────────
+networks:
+  ecommerce-net:
+    driver: bridge
+    name: ecommerce-network
+
+# ─── Volumes ───────────────────────────────────────────────────────────────────
+volumes:
+  rabbitmq_data:
+  auth_db_data:
+  order_db_data:
+  payment_db_data:
+  notification_db_data:

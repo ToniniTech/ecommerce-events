@@ -1,0 +1,46 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: auth-service
+
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/auth_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${MYSQL_USER:authuser}
+    password: ${MYSQL_PASSWORD:authpass}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+jwt:
+  # In production: use a 256-bit random secret stored in a secrets manager (AWS Secrets Manager, Vault)
+  # Never hardcode in production — this is for demo only
+  secret: ${JWT_SECRET:3d8f2c1a9b4e7f0d5c2a8b3e6f1d4c7a0b5e8f2d1c4a7b0e3f6d9c2a5b8e1f4}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}   # 24 hours
+  refresh-expiration-ms: ${JWT_REFRESH_MS:604800000}  # 7 days
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.ecommerce: DEBUG
+    org.springframework.security: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [auth-service] %logger{36} - %msg%n"
