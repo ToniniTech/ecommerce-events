@@ -29,6 +29,7 @@ import java.io.IOException;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+// OncePerRequestFilter garantiza que el filtro se ejecute una vez por request.
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
@@ -52,12 +53,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             if (!jwtService.isTokenValid(jwt)) {
-                log.warn("[AUTH-SERVICE] Invalid JWT token received");
                 filterChain.doFilter(request, response);
+                log.warn("[AUTH-SERVICE] Invalid JWT token received");
                 return;
             }
 
             final String email = jwtService.extractEmail(jwt);
+            log.info("[AUTH-SERVICE] Extracted email");
 
             // Only set authentication if not already set in context
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
