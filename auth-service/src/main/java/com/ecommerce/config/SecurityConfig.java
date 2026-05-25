@@ -33,6 +33,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints — no token required
                 .requestMatchers(
+                    "/api/auth/admin/**").hasRole("ADMIN")
+                .requestMatchers(
                     "/api/auth/register",
                     "/api/auth/login",
                     "/api/auth/refresh",

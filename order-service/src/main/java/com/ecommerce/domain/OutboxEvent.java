@@ -27,7 +27,7 @@ public class OutboxEvent {
     private String eventType;
 
     @Column(name = "payload",  nullable = false)
-    @Size(max = 1000, message = "El nombre no debe acceder los 1000 caracteres")
+    @Size(max = 1500, message = "El nombre no debe acceder los 1500 caracteres")
     private String payload;
 
     @Enumerated(EnumType.STRING)

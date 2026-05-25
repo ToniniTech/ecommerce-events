@@ -26,6 +26,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final UserSecurityService userSecurityService;
 
     @Value("${jwt.refresh-expiration-ms}")
     private long refreshExpirationMs;
@@ -62,20 +63,22 @@ public class AuthService {
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
+
         log.info("[AUTH-SERVICE] Login attempt | email={}", request.getEmail());
 
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new InvalidCredentialsException("User not found"));
         try {
             // Spring Security validates email + password against DB
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             request.getEmail(), request.getPassword()));
         } catch (BadCredentialsException ex) {
+            userSecurityService.registerFailedLogins(user.getEmail());
             log.warn("[AUTH-SERVICE] Failed login attempt | email={}", request.getEmail());
             throw new InvalidCredentialsException("Invalid email or password");
         }
-
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new InvalidCredentialsException("User not found"));
 
         // Revoke all existing refresh tokens for this user (single-session policy)
         refreshTokenRepository.revokeAllByUserId(user.getId());
@@ -86,6 +89,7 @@ public class AuthService {
         log.info("[AUTH-SERVICE] Login successful | customerId={}", user.getCustomerId());
         return buildAuthResponse(user, accessToken, refreshToken);
     }
+
 
     // ── Refresh Token ─────────────────────────────────────────────────────────
 
@@ -105,8 +109,8 @@ public class AuthService {
         User user = storedToken.getUser();
 
         // Rotate refresh token — old one is revoked, new one is issued
-        storedToken.setRevoked(true);
-        refreshTokenRepository.save(storedToken);
+         storedToken.setRevoked(true);//------> TESTING
+         refreshTokenRepository.save(storedToken);
 
         String newAccessToken  = jwtService.generateAccessToken(user);
         String newRefreshToken = createRefreshToken(user);
@@ -124,6 +128,35 @@ public class AuthService {
             refreshTokenRepository.save(token);
             log.info("[AUTH-SERVICE] User logged out | customerId={}", token.getUser().getCustomerId());
         });
+    }
+
+    // -- Lock an account --------------------------------------------------------
+
+    @Transactional
+    public void lockUser(String customerId){
+        //userRepository.findByCustomerId(customerId).ifPresent(user -> {
+        User user = userRepository.findByCustomerId(customerId)
+                        .orElseThrow(()-> new UserNotFoundException(
+                                "User not found: " + customerId));
+            user.setActive(false);
+            refreshTokenRepository.revokeAllByUserId(user.getId());
+            userRepository.save(user);
+            log.info("[AUTH-SERVICE] User locked | customerId={}", user.getCustomerId());
+
+
+    }
+
+    // -- Unlock an account --------------------------------------------------------
+    @Transactional
+    public void unlockUser(String customerId){
+        User user = userRepository.findByCustomerId(customerId)
+                .orElseThrow(() -> new UserNotFoundException(
+                        "User not found" + customerId
+                        ));
+            user.setActive(true);
+            userRepository.save(user);
+            log.info("[AUTH SERVICE] User unlocked | customerId={}", user.getCustomerId());
+
     }
 
     // ── Validate Token (used by other microservices) ──────────────────────────
