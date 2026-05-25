@@ -166,7 +166,7 @@ services:
       MYSQL_USER: authuser
       MYSQL_PASSWORD: authpass
       JWT_SECRET: 3d8f2c1a9b4e7f0d5c2a8b3e6f1d4c7a0b5e8f2d1c4a7b0e3f6d9c2a5b8e1f4
-      JWT_EXPIRATION_MS: 86400000
+      JWT_EXPIRATION_MS: 500000
       JWT_REFRESH_MS: 604800000
     depends_on:
       auth-db:
