@@ -26,10 +26,6 @@ import java.util.List;
 @Builder
 public class CreateOrderRequest {
 
-    @NotBlank(message = "customerEmail is required")
-    @Email(message = "Invalid email format")
-    private String customerEmail;
-
     @NotBlank(message = "currency is required")
     @Size(min = 3, max = 3, message = "Currency must be 3 characters (e.g. USD)")
     private String currency;

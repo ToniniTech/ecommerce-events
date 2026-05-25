@@ -41,7 +41,8 @@ public class OrderService {
      *   - unitPrice      → resolved from ProductCatalogService (client cannot set prices)
      */
     @Transactional
-    public OrderResponse createOrder(String customerId, CreateOrderRequest request) {
+    public OrderResponse createOrder(String customerId, String customerEmail, CreateOrderRequest request) {
+
 
         // ── Autogenerate idempotencyKey if client didn't send one ─────────────
         String idempotencyKey = (request.getIdempotencyKey() != null && !request.getIdempotencyKey().isBlank())
@@ -61,7 +62,7 @@ public class OrderService {
         // ── Build order items resolving name + price from catalog ─────────────
         Order order = Order.builder()
                 .customerId(customerId)
-                .customerEmail(request.getCustomerEmail())
+                .customerEmail(customerEmail)
                 .currency(request.getCurrency())
                 .idempotencyKey(idempotencyKey)
                 .build();
@@ -113,7 +114,6 @@ public class OrderService {
             log.error("[ORDER-SERVICE] Error serializando OutboxEvent | orderId={}", savedOrder.getOrderId(), e);
             throw new RuntimeException("Error al serializar el evento de orden", e);
         }
-        eventPublisher.publishOrderCreated(event);
 
         savedOrder.markAsPaymentProcessing();
         orderRepository.save(savedOrder);
@@ -156,6 +156,7 @@ public class OrderService {
     }
 
     private OrderCreatedEvent buildOrderCreatedEvent(Order order) {
+
         List<OrderCreatedEvent.OrderItemDto> itemDtos = order.getItems().stream()
                 .map(item -> OrderCreatedEvent.OrderItemDto.builder()
                         .productId(item.getProductId())
@@ -174,5 +175,13 @@ public class OrderService {
                 .currency(order.getCurrency())
                 .items(itemDtos)
                 .build();
+
+//        // 👇 romper serialización a propósito
+//        event.setNonSerializable(new Object() {
+//            public String getBroken() {
+//                throw new RuntimeException("boom");
+//            }
+//        });
+
     }
 }

@@ -39,6 +39,7 @@ class OrderServiceTest {
     // ── Test data ──────────────────────────────────────────────────────────────
 
     private static final String CUSTOMER_ID = "cust-test-001";
+    private static final String CUSTOMER_EMAIL = "test@example.com";
 
     private CreateOrderRequest validRequest;
 
@@ -46,7 +47,6 @@ class OrderServiceTest {
     void setUp() {
         // New request shape: only productId + quantity (no name, no price)
         validRequest = CreateOrderRequest.builder()
-                .customerEmail("test@example.com")
                 .currency("USD")
                 .idempotencyKey("idem-key-001")
                 .items(List.of(
@@ -76,7 +76,7 @@ class OrderServiceTest {
         });
 
         // Act — note: customerId is now a separate parameter
-        OrderResponse response = orderService.createOrder(CUSTOMER_ID, validRequest);
+        OrderResponse response = orderService.createOrder(CUSTOMER_ID, CUSTOMER_EMAIL, validRequest);
 
         // Assert
         assertThat(response).isNotNull();
@@ -95,7 +95,6 @@ class OrderServiceTest {
     void shouldAutogenerateIdempotencyKey() {
         // Arrange — request without idempotencyKey
         CreateOrderRequest requestWithoutKey = CreateOrderRequest.builder()
-                .customerEmail("test@example.com")
                 .currency("USD")
                 .items(List.of(
                         CreateOrderRequest.OrderItemRequest.builder()
@@ -111,7 +110,7 @@ class OrderServiceTest {
         ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
 
         // Act
-        orderService.createOrder(CUSTOMER_ID, requestWithoutKey);
+        orderService.createOrder(CUSTOMER_ID, CUSTOMER_EMAIL, requestWithoutKey);
 
         // Assert — idempotencyKey must be set even though client didn't send it
         verify(orderRepository, atLeastOnce()).save(captor.capture());
@@ -126,7 +125,7 @@ class OrderServiceTest {
         when(orderRepository.existsByIdempotencyKey("idem-key-001")).thenReturn(true);
 
         // Act & Assert
-        assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_ID, validRequest))
+        assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_ID, CUSTOMER_EMAIL, validRequest))
                 .isInstanceOf(DuplicateOrderException.class)
                 .hasMessageContaining("idem-key-001");
 
@@ -200,7 +199,6 @@ class OrderServiceTest {
                 .thenReturn(new ProductCatalogService.ProductInfo("Mouse Inalámbrico", new BigDecimal("49.99")));
 
         CreateOrderRequest request = CreateOrderRequest.builder()
-                .customerEmail("test@example.com")
                 .currency("USD")
                 .items(List.of(
                         CreateOrderRequest.OrderItemRequest.builder()
@@ -216,7 +214,7 @@ class OrderServiceTest {
         ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
 
         // Act
-        orderService.createOrder(CUSTOMER_ID, request);
+        orderService.createOrder(CUSTOMER_ID, CUSTOMER_EMAIL, request);
 
         // Assert — total = 3 × $49.99 = $149.97, name comes from catalog
         verify(orderRepository, atLeastOnce()).save(captor.capture());
