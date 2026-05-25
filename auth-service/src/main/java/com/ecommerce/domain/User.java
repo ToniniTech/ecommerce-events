@@ -42,7 +42,7 @@ public class User implements UserDetails {
     @Column(name = "customer_id", unique = true, nullable = false, updatable = false)
     private String customerId;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, unique = true)
     private String email;
 
     @Column(nullable = false)
@@ -63,6 +63,10 @@ public class User implements UserDetails {
     @Builder.Default
     private boolean isActive = true;
 
+    @Builder.Default
+    @Column(name = "failed_attemps", nullable = false)
+    private int failedAttemps = 0;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -78,6 +82,11 @@ public class User implements UserDetails {
         }
     }
 
+    public void registerFailedLogins(){
+        this.failedAttemps += 1;
+
+    }
+
     // ── UserDetails implementation ────────────────────────────────────────────
 
     @Override
@@ -86,15 +95,15 @@ public class User implements UserDetails {
     }
 
     @Override
+    public boolean isAccountNonLocked() {return failedAttemps < 3;}
+
+    @Override
     public String getUsername() {
         return email; // Spring Security uses email as the username
     }
 
     @Override
     public boolean isAccountNonExpired()  { return true; }
-
-    @Override
-    public boolean isAccountNonLocked()   { return true; }
 
     @Override
     public boolean isCredentialsNonExpired() { return true; }

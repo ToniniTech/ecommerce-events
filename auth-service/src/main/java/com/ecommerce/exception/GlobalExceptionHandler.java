@@ -24,6 +24,15 @@ public class GlobalExceptionHandler {
         return detail;
     }
 
+    @ExceptionHandler(UserNotFoundException.class)
+    public ProblemDetail handleUserNotFound(UserNotFoundException ex){
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("User not found");
+        detail.setProperty("timestamp: ", Instant.now());
+        return detail;
+
+    }
+
     @ExceptionHandler(InvalidCredentialsException.class)
     public ProblemDetail handleInvalidCredentials(InvalidCredentialsException ex) {
         // Return 401 with a generic message — never reveal which field is wrong
