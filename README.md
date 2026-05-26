@@ -46,7 +46,7 @@ CLIENT (browser / Postman)
 │   DB: auth_db   │  secreto     │   DB: order_db       │
 │                 │  compartido  │                      │
 │ /register       │              │ - extrae customerId  │
-│ /login          │              │   del token JWT      │
+│ /login          │              │   del token JWT      │ 
 │ /refresh        │              │ - resuelve precios   │
 │ /logout         │              │   del catálogo       │
 └─────────────────┘              └──────────────────────┘
@@ -124,6 +124,8 @@ Si el cliente enviara el precio, podría poner $0.01 en cualquier producto. El s
 | **Publisher confirms** | RabbitTemplate | Garantía de entrega al broker |
 | **JWT + Refresh Token** | Auth Service | Autenticación stateless con rotación de tokens |
 | **BCrypt passwords** | Auth Service | Hash con salt automático — nunca se guarda la contraseña |
+| **Account Locking**          | Auth Service | Tabla `failed_attemps` — bloqueo automático tras 3 intentos fallidos |
+| **Role-Based Access (RBAC)** | Auth Service | Rutas `/api/auth/admin/**` restringidas al rol `ADMIN`               |
 
 ---
 
@@ -219,7 +221,6 @@ curl -X POST http://localhost:8081/api/orders \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <accessToken>" \
   -d '{
-    "customerEmail": "juan@example.com",
     "currency": "USD",
     "items": [
       { "productId": "prod-001", "quantity": 1 },
@@ -263,6 +264,38 @@ curl -X POST http://localhost:8081/api/orders \
     "items": [{ "productId": "prod-009", "quantity": 1 }]
   }'
 ```
+## Endpoints de administración
+
+Requieren JWT con rol `ADMIN`. El usuario admin se crea automáticamente al iniciar el servicio.
+
+### Login como admin
+
+```bash
+curl -X POST http://localhost:8084/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "anthony.viveros@admin.com",
+    "password": "tu-password-admin"
+  }'
+```
+
+### Bloquear una cuenta
+
+Desactiva el usuario y revoca todos sus refresh tokens. La cuenta queda bloqueada tras **3 intentos de login fallidos** o manualmente con este endpoint.
+
+```bash
+curl -X PATCH http://localhost:8084/api/auth/admin/lockUser/{customerId} \
+  -H "Authorization: Bearer "
+```
+
+### Desbloquear una cuenta
+
+```bash
+curl -X PATCH http://localhost:8084/api/auth/admin/unlockUser/{customerId} \
+  -H "Authorization: Bearer "
+```
+
+Ambos endpoints retornan `204 No Content` si la operación fue exitosa.
 
 ---
 
