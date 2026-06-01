@@ -6,7 +6,7 @@ spring:
     name: order-service
 
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/order_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:3307/order_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: ${MYSQL_USER:orderuser}
     password: ${MYSQL_PASSWORD:orderpass}
     driver-class-name: com.mysql.cj.jdbc.Driver
