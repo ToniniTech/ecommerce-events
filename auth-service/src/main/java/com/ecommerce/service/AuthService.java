@@ -123,11 +123,20 @@ public class AuthService {
 
     @Transactional
     public void logout(String refreshToken) {
-        refreshTokenRepository.findByToken(refreshToken).ifPresent(token -> {
-            token.setRevoked(true);
-            refreshTokenRepository.save(token);
-            log.info("[AUTH-SERVICE] User logged out | customerId={}", token.getUser().getCustomerId());
-        });
+
+        RefreshToken token = refreshTokenRepository
+                .findByToken(refreshToken)
+                .orElseThrow(()-> new InvalidTokenException("Token not found"));
+
+        if (!token.isValid()){
+            throw new InvalidTokenException("Token is revoked or expired");
+        }
+        token.setRevoked(true);
+        refreshTokenRepository.save(token);
+        log.info("[AUTH-SERVICE] User logged out | customerId={}",
+                token.getUser().getCustomerId());
+          //  log.info("[AUTH-SERVICE] User logged out | customerId={}", token.getUser().getCustomerId());
+
     }
 
     // -- Lock an account --------------------------------------------------------
