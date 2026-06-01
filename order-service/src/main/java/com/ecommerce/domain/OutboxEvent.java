@@ -8,8 +8,12 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table
-@NoArgsConstructor
+@Table(
+        name = "outbox_events",
+        indexes = {
+                @Index(name = "idx_outbox_status_created", columnList = "status, createdAt")
+        }
+)@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Getter

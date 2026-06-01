@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -24,7 +25,7 @@ public class OutboxProcessor {
     private final OrderEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
 
-    @Scheduled(fixedDelay = 2000)
+    @Scheduled(fixedDelay = 1000)
 
     public void process(){
         List<OutboxEvent> pendingEvents = outboxEventRepository.findByStatus(OutboxStatus.PENDING);
