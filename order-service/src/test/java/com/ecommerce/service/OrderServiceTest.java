@@ -7,6 +7,7 @@ import com.ecommerce.exception.DuplicateOrderException;
 import com.ecommerce.messaging.OrderEventPublisher;
 import com.ecommerce.messaging.events.PaymentFailedEvent;
 import com.ecommerce.messaging.events.PaymentProcessedEvent;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,8 @@ class OrderServiceTest {
     @Mock private OrderRepository orderRepository;
     @Mock private OrderEventPublisher eventPublisher;
     @Mock private ProductCatalogService productCatalogService;
+    @Mock private OutboxEventRepository outboxEventRepository;
+    @Mock private ObjectMapper objectMapper;  // ← agregar esto
 
     @InjectMocks private OrderService orderService;
 
@@ -57,9 +60,8 @@ class OrderServiceTest {
                 ))
                 .build();
 
-        // Catalog always resolves prod-001 to Teclado Mecánico at $129.99
-        when(productCatalogService.resolve("prod-001"))
-                .thenReturn(new ProductCatalogService.ProductInfo("Teclado Mecánico", new BigDecimal("129.99")));
+//        // Catalog always resolves prod-001 to Teclado Mecánico at $129.99
+
     }
 
     // ── Tests ──────────────────────────────────────────────────────────────────
@@ -67,25 +69,27 @@ class OrderServiceTest {
     @Test
     @DisplayName("should create order, resolve price from catalog and publish OrderCreated event")
     void shouldCreateOrderAndPublishEvent() {
-        // Arrange
+        // Arrange - dado este caso
         when(orderRepository.existsByIdempotencyKey(any())).thenReturn(false);
+        when(productCatalogService.resolve("prod-001"))
+                .thenReturn(new ProductCatalogService.ProductInfo("Teclado Mecánico", new BigDecimal("129.99")));
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
             Order o = inv.getArgument(0);
             o.setId(1L);
             return o;
         });
 
-        // Act — note: customerId is now a separate parameter
+        // Act — note: customerId is now a separate parameter - cuando hago esto
         OrderResponse response = orderService.createOrder(CUSTOMER_ID, CUSTOMER_EMAIL, validRequest);
 
-        // Assert
+        // Assert - espero esto
         assertThat(response).isNotNull();
         assertThat(response.getCustomerId()).isEqualTo(CUSTOMER_ID);
         // 2 units × $129.99 = $259.98
         assertThat(response.getTotalAmount()).isEqualByComparingTo(new BigDecimal("259.98"));
 
-        verify(eventPublisher, times(1)).publishOrderCreated(any());
-        verify(productCatalogService, times(1)).resolve("prod-001");
+        verify(outboxEventRepository, times(1)).save(any());
+        verify(eventPublisher, never()).publishOrderCreated(any());
         // Save called twice: once PENDING, once PAYMENT_PROCESSING
         verify(orderRepository, times(2)).save(any(Order.class));
     }
@@ -105,6 +109,8 @@ class OrderServiceTest {
                 .build();
 
         when(orderRepository.existsByIdempotencyKey(any())).thenReturn(false);
+        when(productCatalogService.resolve("prod-001"))
+                .thenReturn(new ProductCatalogService.ProductInfo("Teclado Mecánico", new BigDecimal("129.99")));
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
 
         ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
@@ -121,10 +127,10 @@ class OrderServiceTest {
     @Test
     @DisplayName("should reject duplicate order with same idempotency key")
     void shouldRejectDuplicateIdempotencyKey() {
-        // Arrange
+        // Arrange - dado este contexto
         when(orderRepository.existsByIdempotencyKey("idem-key-001")).thenReturn(true);
 
-        // Act & Assert
+        // Act & Assert / cuando hago esto
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_ID, CUSTOMER_EMAIL, validRequest))
                 .isInstanceOf(DuplicateOrderException.class)
                 .hasMessageContaining("idem-key-001");
@@ -133,35 +139,35 @@ class OrderServiceTest {
         verify(productCatalogService, never()).resolve(any());
     }
 
-    @Test
-    @DisplayName("should update order to PAID when PaymentProcessed received")
-    void shouldMarkOrderAsPaidOnPaymentProcessed() {
-        // Arrange
-        Order order = Order.builder()
-                .orderId("ord-123")
-                .status(OrderStatus.PAYMENT_PROCESSING)
-                .build();
+        @Test
+        @DisplayName("should update order to PAID when PaymentProcessed received")
+        void shouldMarkOrderAsPaidOnPaymentProcessed() {
+            // Arrange
+            Order order = Order.builder()
+                    .orderId("order-123")
+                    .status(OrderStatus.PAYMENT_PROCESSING)
+                    .build();
 
-        PaymentProcessedEvent event = PaymentProcessedEvent.builder()
-                .eventId(UUID.randomUUID().toString())
-                .orderId("ord-123")
-                .paymentId("pay-abc")
-                .amount(new BigDecimal("259.98"))
-                .currency("USD")
-                .processedAt(LocalDateTime.now())
-                .build();
+            PaymentProcessedEvent event = PaymentProcessedEvent.builder()
+                    .eventId(UUID.randomUUID().toString())
+                    .orderId("order-123")
+                    .paymentId("pay-abc")
+                    .amount(new BigDecimal("259.98"))
+                    .currency("USD")
+                    .processedAt(LocalDateTime.now())
+                    .build();
 
-        when(orderRepository.findByOrderId("ord-123")).thenReturn(Optional.of(order));
-        when(orderRepository.save(any())).thenReturn(order);
+            when(orderRepository.findByOrderId("order-123")).thenReturn(Optional.of(order));
+            when(orderRepository.save(any())).thenReturn(order);
 
-        // Act
-        orderService.handlePaymentProcessed(event);
+            // Act
+            orderService.handlePaymentProcessed(event);
 
-        // Assert
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
-        assertThat(order.getPaymentId()).isEqualTo("pay-abc");
-        verify(orderRepository).save(order);
-    }
+            // Assert
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
+            assertThat(order.getPaymentId()).isEqualTo("pay-abc");
+            verify(orderRepository).save(order);
+            }
 
     @Test
     @DisplayName("should update order to PAYMENT_FAILED when PaymentFailed received")
