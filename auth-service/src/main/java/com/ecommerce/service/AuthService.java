@@ -190,7 +190,7 @@ public class AuthService {
                 .user(user)
                 .expiresAt(LocalDateTime.now().plusNanos(refreshExpirationMs * 1_000_000L))
                 .build();
-        return refreshTokenRepository.save(refreshToken).getToken();
+        return refreshTokenRepository.save(refreshToken).getRefreshToken();
     }
 
     private AuthResponse buildAuthResponse(User user, String accessToken, String refreshToken) {

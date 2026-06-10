@@ -8,6 +8,7 @@ import com.ecommerce.messaging.PaymentEventPublisher;
 import com.ecommerce.messaging.events.OrderCreatedEvent;
 import com.ecommerce.messaging.events.PaymentFailedEvent;
 import com.ecommerce.messaging.events.PaymentProcessedEvent;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,11 +30,15 @@ import static org.mockito.Mockito.*;
 @DisplayName("PaymentService Unit Tests")
 class PaymentServiceTest {
 
-    @Mock private PaymentRepository paymentRepository;
-    @Mock private PaymentGatewaySimulator gatewaySimulator;
-    @Mock private PaymentEventPublisher eventPublisher;
+    @Mock
+    private PaymentRepository paymentRepository;
+    @Mock
+    private PaymentGatewaySimulator gatewaySimulator;
+    @Mock
+    private PaymentEventPublisher eventPublisher;
 
-    @InjectMocks private PaymentService paymentService;
+    @InjectMocks
+    private PaymentService paymentService;
 
     private OrderCreatedEvent orderCreatedEvent;
 
@@ -74,28 +79,27 @@ class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("should publish PaymentFailed when gateway declines")
+    @DisplayName("Should public payment on declined")
     void shouldPublishPaymentFailedOnDecline() {
-        // Arrange
+        //Arrange
         when(paymentRepository.existsByOrderId("ord-test-001")).thenReturn(false);
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(gatewaySimulator.charge(any(), any(), any()))
-                .thenReturn(PaymentGatewaySimulator.GatewayResult.failure(
-                        "INSUFFICIENT_FUNDS", "Payment declined by bank"));
+        when(gatewaySimulator.charge(any(), any(), any())).thenReturn(PaymentGatewaySimulator.GatewayResult.failure("INSUFFICIENT_FUNDS", "Payment declined by issuing bank"));
 
-        // Act
+        //Act
         paymentService.processPayment(orderCreatedEvent);
 
-        // Assert
-        ArgumentCaptor<PaymentFailedEvent> captor =
-                ArgumentCaptor.forClass(PaymentFailedEvent.class);
+        //Verify
+
+        ArgumentCaptor<PaymentFailedEvent> captor = ArgumentCaptor
+                .forClass(PaymentFailedEvent.class);
         verify(eventPublisher).publishPaymentFailed(captor.capture());
         verify(eventPublisher, never()).publishPaymentProcessed(any());
 
         PaymentFailedEvent published = captor.getValue();
         assertThat(published.getOrderId()).isEqualTo("ord-test-001");
         assertThat(published.getFailureCode()).isEqualTo("INSUFFICIENT_FUNDS");
-        assertThat(published.getFailureReason()).isEqualTo("Payment declined by bank");
+        assertThat(published.getFailureReason()).isEqualTo("Payment declined by issuing bank");
     }
 
     @Test
@@ -108,6 +112,7 @@ class PaymentServiceTest {
         assertThatThrownBy(() -> paymentService.processPayment(orderCreatedEvent))
                 .isInstanceOf(PaymentAlreadyExistsException.class)
                 .hasMessageContaining("ord-test-001");
+
 
         verify(gatewaySimulator, never()).charge(any(), any(), any());
         verify(eventPublisher, never()).publishPaymentProcessed(any());
@@ -134,4 +139,46 @@ class PaymentServiceTest {
         assertThat(finalPayment.getStatus()).isEqualTo(PaymentStatus.COMPLETED);
         assertThat(finalPayment.getGatewayTransactionId()).isEqualTo("gw-txn-xyz");
     }
+
+    @Test
+    @DisplayName("Should reject duplicated orders")
+    void shouldRejectDuplicatedOrders() {
+        //Arrange
+        when(paymentRepository.existsByOrderId("ord-test-001")).thenReturn(true);
+
+        //Act & Assert
+        assertThatThrownBy(() -> paymentService.processPayment(orderCreatedEvent))
+                .isInstanceOf(PaymentAlreadyExistsException.class)
+                .hasMessageContaining("ord-test-001");
+
+        //Verify
+        verify(eventPublisher, never()).publishPaymentFailed(any());
+        verify(eventPublisher, never()).publishPaymentProcessed(any());
+        verify(gatewaySimulator, never()).charge(any(), any(), any());
+    }
+
+
+    @Test
+    @DisplayName("should publish PaymentProcessed when gateway approves")
+    void shouldPublishPaymentProcessedOnApproval2(){
+        //Arrange
+        when(paymentRepository.existsByOrderId("ord-test-001")).thenReturn(false);
+        when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(gatewaySimulator.charge(any(), any(), any())).thenReturn(PaymentGatewaySimulator.GatewayResult.success("as123"));
+
+        //Act
+        paymentService.processPayment(orderCreatedEvent);
+
+        //Assert
+        ArgumentCaptor<PaymentProcessedEvent> captor = ArgumentCaptor
+                .forClass(PaymentProcessedEvent.class);
+        verify(eventPublisher).publishPaymentProcessed(captor.capture());
+        verify(eventPublisher, never()).publishPaymentFailed(any());
+
+        PaymentProcessedEvent published = captor.getValue();
+        assertThat(published.getOrderId()).isEqualTo("ord-test-001");
+        assertThat(published.getGatewayTransactionId()).isEqualTo("as123");
+        assertThat(published.getAmount()).isEqualTo("149.99");
+    }
+
 }

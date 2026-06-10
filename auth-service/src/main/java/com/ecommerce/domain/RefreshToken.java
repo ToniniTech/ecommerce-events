@@ -29,7 +29,7 @@ public class RefreshToken {
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String token;
+    private String refreshToken;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -48,8 +48,8 @@ public class RefreshToken {
 
     @PrePersist
     public void prePersist() {
-        if (this.token == null) {
-            this.token = UUID.randomUUID().toString();
+        if (this.refreshToken == null) {
+            this.refreshToken = UUID.randomUUID().toString();
         }
     }
 
