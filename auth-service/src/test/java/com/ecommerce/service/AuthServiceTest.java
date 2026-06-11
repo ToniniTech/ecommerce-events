@@ -116,7 +116,7 @@ public class AuthServiceTest {
 
         //Assert
         assertThat(response).isNotNull();
-        assertThat(response.getEmail()).isEqualTo("anthonymvf09@gmail.com");
+        assertThat(response.getEmail()).isEqualTo("anthonymvf@gmail.com");
 
         //Verify
         verify(userRepository).save(any());
