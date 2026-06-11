@@ -253,7 +253,7 @@ public class AuthServiceTest {
     }
 
     @Test
-    void shouldLogOutUserAndRevokeToken(){
+    void shouldLogOutUserAndRevokeRefreshToken(){
         //Arrange
         when(refreshTokenRepository.findByToken(refreshToken.getRefreshToken()))
                 .thenReturn(Optional.of(refreshToken));
