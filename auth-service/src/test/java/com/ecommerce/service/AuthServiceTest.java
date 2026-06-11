@@ -253,6 +253,23 @@ public class AuthServiceTest {
     }
 
     @Test
+    void shouldLogOutUserAndRevokeRefreshToken(){
+        //Arrange
+        when(refreshTokenRepository.findByToken(refreshToken.getRefreshToken()))
+                .thenReturn(Optional.of(refreshToken));
+        //Act
+        authService.logout("34QWSDAFSFSAF");
+
+        //Assert
+        assertThat(refreshToken.isValid()).isFalse();
+        assertThat(refreshToken.isRevoked()).isTrue();
+
+        //Verify
+        verify(refreshTokenRepository).save(refreshToken);
+
+    }
+
+    @Test
     void shouldDeactivateUserAndRevokeAllTokens() {
         //Arrange
         when(userRepository.findByCustomerId(user.getCustomerId()))
