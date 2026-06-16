@@ -1,5 +1,7 @@
-package com.ecommerce;
+package com.ecommerce.integration;
 
+import com.ecommerce.IntegrationTestBase;
+import com.ecommerce.service.OrderService;
 import com.ecommerce.controller.dto.CreateOrderRequest;
 import com.ecommerce.controller.dto.OrderResponse;
 import com.ecommerce.domain.*;
@@ -16,7 +18,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class OrderServiceIntegrationTest extends IntegrationTestBase{
+public class OrderServiceIntegrationTest extends IntegrationTestBase {
 
     @Autowired private OrderService orderService;
     @Autowired private OrderRepository orderRepository;
@@ -89,8 +91,5 @@ public class OrderServiceIntegrationTest extends IntegrationTestBase{
         assertThat(orderRepository.count()).isEqualTo(1);
     }
 
-    @Test
-    void dockerTest() {
-        System.out.println(System.getenv("DOCKER_HOST"));
-    }
+
 }
