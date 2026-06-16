@@ -1,4 +1,4 @@
-package com.ecommerce.service;
+package com.ecommerce;
 
 import com.ecommerce.domain.Payment;
 import com.ecommerce.domain.PaymentRepository;

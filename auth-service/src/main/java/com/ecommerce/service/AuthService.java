@@ -1,4 +1,4 @@
-package com.ecommerce.service;
+package com.ecommerce;
 
 import com.ecommerce.controller.dto.*;
 import com.ecommerce.domain.*;
@@ -98,7 +98,7 @@ public class AuthService {
         log.info("[AUTH-SERVICE] Token refresh requested");
 
         RefreshToken storedToken = refreshTokenRepository
-                .findByToken(request.getRefreshToken())
+                .findByRefreshToken(request.getRefreshToken())
                 .orElseThrow(() -> new InvalidTokenException("Refresh token not found"));
 
         if (!storedToken.isValid()) {
@@ -125,7 +125,7 @@ public class AuthService {
     public void logout(String refreshToken) {
 
         RefreshToken token = refreshTokenRepository
-                .findByToken(refreshToken)
+                .findByRefreshToken(refreshToken)
                 .orElseThrow(()-> new InvalidTokenException("Token not found"));
 
         if (!token.isValid()){

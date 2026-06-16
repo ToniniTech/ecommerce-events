@@ -1,4 +1,4 @@
-package com.ecommerce.service;
+package com.ecommerce;
 
 import com.ecommerce.domain.User;
 import com.ecommerce.domain.UserRepository;
