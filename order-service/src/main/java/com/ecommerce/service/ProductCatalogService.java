@@ -1,4 +1,4 @@
-package com.ecommerce;
+package com.ecommerce.service;
 
 import com.ecommerce.exception.ProductNotFoundException;
 import lombok.extern.slf4j.Slf4j;

@@ -1,4 +1,4 @@
-package com.ecommerce;
+package com.ecommerce.service;
 
 import com.ecommerce.domain.*;
 import com.ecommerce.messaging.events.OrderCreatedEvent;
