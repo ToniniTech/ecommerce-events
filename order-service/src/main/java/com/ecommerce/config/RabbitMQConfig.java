@@ -92,6 +92,11 @@ public class RabbitMQConfig {
         return QueueBuilder.durable(paymentProcessedDlq).build();
     }
 
+    @Bean
+    public Queue orderCreatedQueue(){
+        return new Queue("order.created.queue", true);
+    }
+
     // ─── Bindings ─────────────────────────────────────────────────────────────
 
     @Bean
@@ -116,6 +121,17 @@ public class RabbitMQConfig {
                 .bind(paymentProcessedDlqQueue())
                 .to(deadLetterExchange())
                 .with("dlq.payment.processed");
+    }
+
+    @Bean
+    public Binding binding(
+            Queue orderCreatedQueue,
+            TopicExchange ordersExchange) {
+
+        return BindingBuilder
+                .bind(orderCreatedQueue)
+                .to(ordersExchange)
+                .with("order.created");
     }
 
     // ─── Message Converter ────────────────────────────────────────────────────
