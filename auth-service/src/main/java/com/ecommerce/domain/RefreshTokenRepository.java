@@ -10,7 +10,7 @@ import java.util.Optional;
 @Repository
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
 
-    Optional<RefreshToken> findByToken(String token);
+    Optional<RefreshToken> findByRefreshToken(String refreshToken);
 
     @Modifying
     @Query("DELETE FROM RefreshToken r WHERE r.user.id = :userId")
