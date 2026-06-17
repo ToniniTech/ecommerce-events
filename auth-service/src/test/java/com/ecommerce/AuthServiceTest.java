@@ -1,4 +1,4 @@
-package com.ecommerce.service;
+package com.ecommerce;
 
 import com.ecommerce.controller.dto.AuthResponse;
 import com.ecommerce.controller.dto.LoginRequest;
@@ -12,6 +12,8 @@ import com.ecommerce.exception.EmailAlreadyExistsException;
 import com.ecommerce.exception.InvalidCredentialsException;
 import com.ecommerce.exception.InvalidTokenException;
 import com.ecommerce.security.JwtService;
+import com.ecommerce.service.AuthService;
+import com.ecommerce.service.UserSecurityService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -192,7 +194,7 @@ public class AuthServiceTest {
     @Test
     void shouldGenerateNewAccessTokenFromValidRefreshToken() {
         //Arrange
-        when(refreshTokenRepository.findByToken(refreshRequest.getRefreshToken()))
+        when(refreshTokenRepository.findByRefreshToken(refreshRequest.getRefreshToken()))
                 .thenReturn(Optional.of(refreshToken));
 
         when(refreshTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -227,7 +229,7 @@ public class AuthServiceTest {
                 .expiresAt(LocalDateTime.now().plusDays(1))
                 .build();
 
-        when(refreshTokenRepository.findByToken(revokedToken.getRefreshToken()))
+        when(refreshTokenRepository.findByRefreshToken(revokedToken.getRefreshToken()))
                 .thenReturn(Optional.of(revokedToken));
 
         //Act & throw
@@ -236,14 +238,14 @@ public class AuthServiceTest {
                 .hasMessage("Refresh token is expired or revoked");
 
         //Verify
-        verify(refreshTokenRepository).findByToken("34QWSDAFSFSAF");
+        verify(refreshTokenRepository).findByRefreshToken("34QWSDAFSFSAF");
 
     }
 
     @Test
     void shouldThrowExceptionWhenRefreshTokenDoesNotExist() {
         //Arrange
-        when(refreshTokenRepository.findByToken(refreshRequest.getRefreshToken()))
+        when(refreshTokenRepository.findByRefreshToken(refreshRequest.getRefreshToken()))
                 .thenReturn(Optional.empty());
 
         //Act & throw
@@ -255,7 +257,7 @@ public class AuthServiceTest {
     @Test
     void shouldLogOutUserAndRevokeRefreshToken(){
         //Arrange
-        when(refreshTokenRepository.findByToken(refreshToken.getRefreshToken()))
+        when(refreshTokenRepository.findByRefreshToken(refreshToken.getRefreshToken()))
                 .thenReturn(Optional.of(refreshToken));
         //Act
         authService.logout("34QWSDAFSFSAF");

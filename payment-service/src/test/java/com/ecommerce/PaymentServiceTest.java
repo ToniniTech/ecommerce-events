@@ -1,4 +1,4 @@
-package com.ecommerce.service;
+package com.ecommerce;
 
 import com.ecommerce.domain.Payment;
 import com.ecommerce.domain.PaymentRepository;
@@ -8,7 +8,8 @@ import com.ecommerce.messaging.PaymentEventPublisher;
 import com.ecommerce.messaging.events.OrderCreatedEvent;
 import com.ecommerce.messaging.events.PaymentFailedEvent;
 import com.ecommerce.messaging.events.PaymentProcessedEvent;
-import org.assertj.core.api.Assertions;
+import com.ecommerce.service.PaymentGatewaySimulator;
+import com.ecommerce.service.PaymentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,7 +20,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
