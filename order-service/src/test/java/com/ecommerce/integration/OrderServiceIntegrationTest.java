@@ -9,7 +9,9 @@ import com.ecommerce.exception.DuplicateOrderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -17,12 +19,17 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 
 public class OrderServiceIntegrationTest extends IntegrationTestBase {
 
     @Autowired private OrderService orderService;
     @Autowired private OrderRepository orderRepository;
-    @Autowired private OutboxEventRepository outboxEventRepository;
+    @Autowired private OutboxEventRepository realOutboxEventRepository;
+
+    @SpyBean private OutboxEventRepository outboxEventRepository;
 
     @BeforeEach
     void setUp() {
@@ -65,6 +72,7 @@ public class OrderServiceIntegrationTest extends IntegrationTestBase {
         assertThat(outboxEvents).hasSize(1);
         assertThat(outboxEvents.get(0).getEventType()).isEqualTo("ORDER_CREATED");
         assertThat(outboxEvents.get(0).getStatus()).isEqualTo(OutboxStatus.PENDING);
+
     }
 
     @Test
@@ -89,6 +97,34 @@ public class OrderServiceIntegrationTest extends IntegrationTestBase {
 
         // Verificar que solo hay 1 orden en la DB
         assertThat(orderRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Should rollback if outbox event fails")
+    void shouldRollbackOrderWhenOutboxSaveFails(){
+        //Arrange
+        doThrow(new RuntimeException("Outbox DB failure"))
+                .when(outboxEventRepository)
+                .save(any(OutboxEvent.class));
+
+        CreateOrderRequest request = CreateOrderRequest.builder()
+                .currency("USD")
+                .idempotencyKey("idem-001")
+                .items(List.of(CreateOrderRequest.OrderItemRequest.builder()
+                                .productId("prod-001")
+                                .quantity(2)
+                        .build()))
+                .build();
+
+        //Act & Assert
+        assertThatThrownBy(()-> orderService
+                        .createOrder("123",
+                                "anthony09@gmail.com",
+                                request))
+                .isInstanceOf(Exception.class);
+
+        //Verificar rollback
+        assertThat(orderRepository.count()).isZero();
     }
 
 
