@@ -13,7 +13,6 @@ import com.ecommerce.messaging.events.OrderCreatedEvent;
 import com.ecommerce.messaging.events.PaymentProcessedEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.antlr.v4.runtime.atn.SemanticContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Message;
@@ -143,50 +142,6 @@ class OrderEventFlowIntegrationTest extends IntegrationTestBase {
                     assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
                     assertThat(order.getPaymentId()).isEqualTo("pay-integration-001");
                 });
-    }
-
-    @Test
-    @DisplayName("should publish OrderCreated event to RabbitMQ after order creation")
-    void shouldPublishOrderCreatedEventToRabbitMQ1() throws InterruptedException {
-
-        //Arrange
-        CreateOrderRequest order = CreateOrderRequest.builder()
-                .currency("USD")
-                .idempotencyKey("idk-001")
-                .items(List.of(CreateOrderRequest.OrderItemRequest.builder()
-                                .quantity(2)
-                                .productId("prod-001")
-                        .build()))
-                .build();
-
-        //Act
-        OrderResponse response  =
-                orderService.createOrder("cust-id-001", "anthonu@gmail.com", order);
-
-        Thread.sleep(1000);
-
-        outboxProcessor.process();
-
-        Message message = rabbitTemplate
-                .receive("order.created.queue", 1000);
-
-        assertThat(message).isNotNull();
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        OrderCreatedEvent event;
-
-        try {
-            event = objectMapper.readValue(message.getBody(), OrderCreatedEvent.class);
-        }catch (IOException e){
-            throw new AssertionError("could not be deserialized");
-        }
-
-        //Assert
-        assertThat(event.getOrderId()).isEqualTo(response.getOrderId());
-        assertThat(event.getCustomerId()).isEqualTo("cust-id-001");
-        assertThat(event.getTotalAmount())
-                .isEqualByComparingTo(new BigDecimal("129.99"));
     }
 
 }
