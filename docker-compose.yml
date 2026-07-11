@@ -20,6 +20,14 @@ version: '3.8'
 # ═══════════════════════════════════════════════════════════════════════════════
 
 services:
+  # ─── Zipkin ──────────────────────────────────────────────────────────────
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - ecommerce-net
 
   # ─── RabbitMQ ──────────────────────────────────────────────────────────────
   rabbitmq:
@@ -153,6 +161,34 @@ services:
     networks:
       - ecommerce-net
 
+  # ─── MySQL: Product DB ─────────────────────────────────────────────────────
+  # No init.sql is mounted: MYSQL_DATABASE creates the schema and Hibernate
+  # (ddl-auto: update) creates the "products" table on first boot.
+  product-db:
+    image: mysql:8.0
+    container_name: product-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: product_db
+      MYSQL_USER: productuser
+      MYSQL_PASSWORD: productpass
+    ports:
+      - "3311:3306"
+    volumes:
+      - product_db_data:/var/lib/mysql
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "productuser", "-pproductpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - ecommerce-net
+
   # ─── Auth Service ──────────────────────────────────────────────────────────
   auth-service:
     build:
@@ -165,9 +201,10 @@ services:
       MYSQL_HOST: auth-db
       MYSQL_USER: authuser
       MYSQL_PASSWORD: authpass
-      JWT_SECRET: 3d8f2c1a9b4e7f0d5c2a8b3e6f1d4c7a0b5e8f2d1c4a7b0e3f6d9c2a5b8e1f4
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_MS: 500000
       JWT_REFRESH_MS: 604800000
+      ZIPKIN_HOST: zipkin
     depends_on:
       auth-db:
         condition: service_healthy
@@ -191,9 +228,11 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: guest
       RABBITMQ_PASSWORD: guest
+      PRODUCT_SERVICE_URL: http://product-service:8085  # ← agregar esto
+      ZIPKIN_HOST: zipkin
       # Order Service calls Auth Service to validate JWT tokens
       AUTH_SERVICE_URL: http://auth-service:8084
-      JWT_SECRET: 3d8f2c1a9b4e7f0d5c2a8b3e6f1d4c7a0b5e8f2d1c4a7b0e3f6d9c2a5b8e1f4
+      JWT_SECRET: ${JWT_SECRET}
     depends_on:
       order-db:
         condition: service_healthy
@@ -201,6 +240,8 @@ services:
         condition: service_healthy
       auth-service:
         condition: service_healthy
+      product-service: # ← agregar esto
+          condition: service_healthy
     restart: on-failure:5
     networks:
       - ecommerce-net
@@ -221,6 +262,7 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: guest
       RABBITMQ_PASSWORD: guest
+      ZIPKIN_HOST: zipkin
     depends_on:
       payment-db:
         condition: service_healthy
@@ -247,6 +289,7 @@ services:
       RABBITMQ_USER: guest
       RABBITMQ_PASSWORD: guest
       MAIL_ENABLED: "false"
+      ZIPKIN_HOST: zipkin
     depends_on:
       notification-db:
         condition: service_healthy
@@ -255,6 +298,35 @@ services:
     restart: on-failure:5
     networks:
       - ecommerce-net
+# ─── Product Service ───────────────────────────────────────────────────────
+  product-service:
+    build:
+      context: ./product-service
+      dockerfile: Dockerfile
+    container_name: product-service
+    ports:
+      - "8085:8085"
+    environment:
+      MYSQL_HOST: product-db
+      MYSQL_USER: productuser
+      MYSQL_PASSWORD: productpass
+      ZIPKIN_HOST: zipkin
+    depends_on:
+      product-db:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+    healthcheck: # ← agregar todo esto
+        test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8085/actuator/health" ]
+        interval: 10s
+        timeout: 5s
+        retries: 10
+        start_period: 40s
+    restart: on-failure:5
+    networks:
+      - ecommerce-net
+
+
 
 # ─── Networks ──────────────────────────────────────────────────────────────────
 networks:
@@ -269,3 +341,6 @@ volumes:
   order_db_data:
   payment_db_data:
   notification_db_data:
+  product_db_data:
+
+
