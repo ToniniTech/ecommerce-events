@@ -29,9 +29,12 @@ spring:
     username: ${RABBITMQ_USER:guest}
     password: ${RABBITMQ_PASSWORD:guest}
     virtual-host: /
+    template:
+      observation-enabled: true      # publisher: inyecta traceparent en headers AMQP
     listener:
       simple:
         acknowledge-mode: manual
+        observation-enabled: true    # consumer: lee traceparent de los headers AMQP
         retry:
           enabled: true
           initial-interval: 2000
@@ -58,6 +61,12 @@ payment:
     processing-delay-ms: 500 # Simulate gateway latency
 
 management:
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://${ZIPKIN_HOST:localhost}:9411/api/v2/spans
   endpoints:
     web:
       exposure:
@@ -66,9 +75,10 @@ management:
     health:
       show-details: always
 
+
 logging:
   level:
     com.ecommerce: DEBUG
     org.springframework.amqp: INFO
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [payment-service] %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [${spring.application.name},%X{traceId},%X{spanId}] %logger{36} - %msg%n"

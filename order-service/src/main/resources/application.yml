@@ -5,8 +5,6 @@ spring:
   application:
     name: order-service
 
-
-
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/order_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: ${MYSQL_USER:orderuser}
@@ -34,9 +32,12 @@ spring:
     username: ${RABBITMQ_USER:guest}
     password: ${RABBITMQ_PASSWORD:guest}
     virtual-host: /
+    template:
+      observation-enabled: true      # publisher: inyecta traceparent en headers AMQP
     listener:
       simple:
         acknowledge-mode: manual
+        observation-enabled: true    # consumer: lee traceparent de los headers AMQP
         retry:
           enabled: true
           initial-interval: 2000
@@ -59,15 +60,24 @@ rabbitmq:
     payment-processed: payment.processed
     payment-failed: payment.failed
 
+product:
+  service:
+    url: ${PRODUCT_SERVICE_URL:http://localhost:8085}
 
 auth:
   service:
     url: ${AUTH_SERVICE_URL:http://localhost:8084}
 
 jwt:
-  secret: ${JWT_SECRET:3d8f2c1a9b4e7f0d5c2a8b3e6f1d4c7a0b5e8f2d1c4a7b0e3f6d9c2a5b8e1f4}
+  secret: ${JWT_SECRET}
 
 management:
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://${ZIPKIN_HOST:localhost}:9411/api/v2/spans
   endpoints:
     web:
       exposure:
@@ -81,4 +91,4 @@ logging:
     com.ecommerce: DEBUG
     org.springframework.amqp: INFO
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [order-service] %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [${spring.application.name},%X{traceId},%X{spanId}] %logger{36} - %msg%n"

@@ -42,6 +42,7 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.routing-key.order-created}")
     private String orderCreatedRoutingKey;
 
+
     // ─── Exchanges ────────────────────────────────────────────────────────────
 
     @Bean

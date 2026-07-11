@@ -13,6 +13,7 @@ import com.ecommerce.messaging.events.OrderCreatedEvent;
 import com.ecommerce.messaging.events.PaymentProcessedEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Message;
@@ -30,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-@ActiveProfiles("test")
 @DisplayName("Order → Payment Event Flow Integration Tests")
 class OrderEventFlowIntegrationTest extends IntegrationTestBase {
 
@@ -45,14 +45,20 @@ class OrderEventFlowIntegrationTest extends IntegrationTestBase {
     @Autowired
     private OutboxProcessor outboxProcessor;
 
+
+    @BeforeEach
+    void setUp() {
+        // Limpiar entre tests para independencia
+        outboxEventRepository.deleteAll();
+        orderRepository.deleteAll();
+    }
+
     @Test
     @DisplayName("should publish OrderCreated event to RabbitMQ after order creation")
     void shouldPublishOrderCreatedEventToRabbitMQ() throws InterruptedException {
         // Arrange
 
         CreateOrderRequest request = CreateOrderRequest.builder()
-                .currency("USD")
-                .idempotencyKey("idem-event-flow-001")
                 .items(List.of(
                         CreateOrderRequest.OrderItemRequest.builder()
                                 .productId("prod-001").quantity(1).build()
@@ -61,7 +67,7 @@ class OrderEventFlowIntegrationTest extends IntegrationTestBase {
 
         // Act — crear la orden (esto guarda en Outbox, no publica directo)
         OrderResponse response = orderService.createOrder(
-                "cust-event-001", "event@test.com", request);
+                "cust-event-001", "event@test.com", "idk-001", request);
 
         // Disparar el OutboxProcessor manualmente
         // (en producción lo hace el @Scheduled cada pocos segundos)
@@ -103,8 +109,6 @@ class OrderEventFlowIntegrationTest extends IntegrationTestBase {
     void shouldUpdateOrderStatusWhenPaymentProcessedEventArrives() {
         // Arrange — crear una orden primero
         CreateOrderRequest request = CreateOrderRequest.builder()
-                .currency("USD")
-                .idempotencyKey("idem-payment-flow-001")
                 .items(List.of(
                         CreateOrderRequest.OrderItemRequest.builder()
                                 .productId("prod-002").quantity(1).build()
@@ -112,7 +116,7 @@ class OrderEventFlowIntegrationTest extends IntegrationTestBase {
                 .build();
 
         OrderResponse created = orderService.createOrder(
-                "cust-payment-001", "payment@test.com", request);
+                "cust-payment-001", "payment@test.com", "idk-001", request);
 
         // Act — simular que el payment-service publicó PaymentProcessed
         PaymentProcessedEvent paymentEvent = PaymentProcessedEvent.builder()
@@ -143,5 +147,6 @@ class OrderEventFlowIntegrationTest extends IntegrationTestBase {
                     assertThat(order.getPaymentId()).isEqualTo("pay-integration-001");
                 });
     }
+
 
 }

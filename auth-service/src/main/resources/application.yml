@@ -5,6 +5,7 @@ spring:
   application:
     name: auth-service
 
+
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/auth_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: ${MYSQL_USER:authuser}
@@ -25,18 +26,25 @@ spring:
 jwt:
   # In production: use a 256-bit random secret stored in a secrets manager (AWS Secrets Manager, Vault)
   # Never hardcode in production — this is for demo only
-  secret: ${JWT_SECRET:3d8f2c1a9b4e7f0d5c2a8b3e6f1d4c7a0b5e8f2d1c4a7b0e3f6d9c2a5b8e1f4}
+  secret: ${JWT_SECRET}
   expiration-ms: ${JWT_EXPIRATION_MS:30000}   # 24 hours
   refresh-expiration-ms: ${JWT_REFRESH_MS:604800000}  # 7 days
 
 management:
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://${ZIPKIN_HOST:localhost}:9411/api/v2/spans
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics
   endpoint:
     health:
       show-details: always
+
 
 logging:
   level:
@@ -44,4 +52,6 @@ logging:
     org.springframework.security: INFO
     org.springframework.aop: DEBUG
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [auth-service] %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [${spring.application.name},%X{traceId},%X{spanId}] %logger{36} - %msg%n"
+
+

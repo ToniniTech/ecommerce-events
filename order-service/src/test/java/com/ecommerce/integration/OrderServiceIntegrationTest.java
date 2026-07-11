@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import static java.beans.Beans.isInstanceOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -41,8 +42,6 @@ public class OrderServiceIntegrationTest extends IntegrationTestBase {
     void shouldPersistOrderAndOutboxEventTogether() {
         // Arrange
         CreateOrderRequest request = CreateOrderRequest.builder()
-                .currency("USD")
-                .idempotencyKey("idem-integration-001")
                 .items(List.of(
                         CreateOrderRequest.OrderItemRequest.builder()
                                 .productId("prod-001")
@@ -53,7 +52,7 @@ public class OrderServiceIntegrationTest extends IntegrationTestBase {
 
         // Act
         OrderResponse response = orderService.createOrder(
-                "cust-test-001", "test@example.com", request);
+                "cust-test-001", "test@example.com", "idk-001", request);
 
         // Assert — verificar en MySQL real
         Optional<Order> savedOrder = orderRepository
@@ -78,19 +77,17 @@ public class OrderServiceIntegrationTest extends IntegrationTestBase {
     void shouldRejectDuplicateIdempotencyKeyInRealDatabase() {
         // Arrange — crear la primera orden
         CreateOrderRequest request = CreateOrderRequest.builder()
-                .currency("USD")
-                .idempotencyKey("idem-duplicate-test")
                 .items(List.of(
                         CreateOrderRequest.OrderItemRequest.builder()
                                 .productId("prod-001").quantity(1).build()
                 ))
                 .build();
 
-        orderService.createOrder("cust-001", "test@example.com", request);
+        orderService.createOrder("cust-001", "test@example.com", "idk-001", request);
 
         // Act & Assert — segunda orden con el mismo key debe fallar
         assertThatThrownBy(() ->
-                orderService.createOrder("cust-001", "test@example.com", request))
+                orderService.createOrder("cust-001", "test@example.com", "idk-001", request))
                 .isInstanceOf(DuplicateOrderException.class);
 
         // Verificar que solo hay 1 orden en la DB
@@ -106,24 +103,25 @@ public class OrderServiceIntegrationTest extends IntegrationTestBase {
                 .save(any(OutboxEvent.class));
 
         CreateOrderRequest request = CreateOrderRequest.builder()
-                .currency("USD")
-                .idempotencyKey("idem-001")
                 .items(List.of(CreateOrderRequest.OrderItemRequest.builder()
-                                .productId("prod-001")
                                 .quantity(2)
+                                .productId("prod-001")
                         .build()))
                 .build();
 
         //Act & Assert
-        assertThatThrownBy(()-> orderService
-                        .createOrder("123",
-                                "anthony09@gmail.com",
-                                request))
+        assertThatThrownBy(()->orderService.
+                createOrder("123",
+                        "anthony09@gmail.com",
+                        "idk-001",
+                        request))
                 .isInstanceOf(Exception.class);
 
         //Verificar rollback
         assertThat(orderRepository.count()).isZero();
+
     }
+
 
 
 }

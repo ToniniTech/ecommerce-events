@@ -12,7 +12,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 public abstract class IntegrationTestBase {
-    // MySQL — se levanta una sola vez para todos los tests
+    // MySQL — starts up once for all tests
     @Container
     static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
             .withDatabaseName("auth_db_test")
@@ -20,13 +20,13 @@ public abstract class IntegrationTestBase {
             .withPassword("testpass")
             .withReuse(true);  // reutiliza el contenedor entre runs
 
-    // RabbitMQ con el plugin de management habilitado
+    // RabbitMQ with the management plugin enabled
     @Container
     static RabbitMQContainer rabbitmq = new RabbitMQContainer("rabbitmq:3.12-management")
             .withReuse(true);
 
-    // Le dice a Spring que use las URLs de los contenedores
-    // en lugar de las del application.yml
+    // Tells Spring to use the container URLs
+    // instead of those in application.yml
     @DynamicPropertySource
     static void overrideProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url",      mysql::getJdbcUrl);
