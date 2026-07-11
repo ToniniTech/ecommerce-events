@@ -26,16 +26,6 @@ import java.util.List;
 @Builder
 public class CreateOrderRequest {
 
-    @NotBlank(message = "currency is required")
-    @Size(min = 3, max = 3, message = "Currency must be 3 characters (e.g. USD)")
-    private String currency;
-
-    /**
-     * Opcional. Si el frontend lo envía, lo usamos (protección contra doble submit).
-     * Si no viene, el servidor autogenera un UUID — el cliente nunca verá un 409 accidental.
-     */
-    private String idempotencyKey;
-
     @NotEmpty(message = "Order must have at least one item")
     @Valid
     private List<OrderItemRequest> items;

@@ -1,11 +1,12 @@
 package com.ecommerce.service;
 
+import com.ecommerce.client.ProductCatalogClient;
+import com.ecommerce.client.ProductInfo;
 import com.ecommerce.controller.dto.CreateOrderRequest;
 import com.ecommerce.controller.dto.OrderResponse;
 import com.ecommerce.domain.*;
 import com.ecommerce.exception.DuplicateOrderException;
 import com.ecommerce.exception.OrderNotFoundException;
-import com.ecommerce.messaging.OrderEventPublisher;
 import com.ecommerce.messaging.events.OrderCreatedEvent;
 import com.ecommerce.messaging.events.PaymentFailedEvent;
 import com.ecommerce.messaging.events.PaymentProcessedEvent;
@@ -27,10 +28,12 @@ import java.util.stream.Collectors;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final OrderEventPublisher eventPublisher;
-    private final ProductCatalogService productCatalogService;
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
+    private final ProductCatalogClient productCatalogClient;
+
+    @org.springframework.beans.factory.annotation.Value("${order.currency:CLP}")
+    private String defaultCurrency;
 
 
     /**
@@ -41,12 +44,12 @@ public class OrderService {
      *   - unitPrice      → resolved from ProductCatalogService (client cannot set prices)
      */
     @Transactional
-    public OrderResponse createOrder(String customerId, String customerEmail, CreateOrderRequest request) {
+    public OrderResponse createOrder(String customerId, String customerEmail, String idempotencyKeyHeader, CreateOrderRequest request) {
 
 
         // ── Autogenerate idempotencyKey if client didn't send one ─────────────
-        String idempotencyKey = (request.getIdempotencyKey() != null && !request.getIdempotencyKey().isBlank())
-                ? request.getIdempotencyKey()
+        String idempotencyKey = (idempotencyKeyHeader != null && !idempotencyKeyHeader.isBlank())
+                ? idempotencyKeyHeader
                 : UUID.randomUUID().toString();
 
         log.info("[ORDER-SERVICE] Creating order | customerId={} | idempotencyKey={} | items={}",
@@ -63,15 +66,16 @@ public class OrderService {
         Order order = Order.builder()
                 .customerId(customerId)
                 .customerEmail(customerEmail)
-                .currency(request.getCurrency())
+                .currency(defaultCurrency)
                 .idempotencyKey(idempotencyKey)
                 .build();
 
         List<OrderItem> items = request.getItems().stream()
                 .map(itemReq -> {
-                    // Server resolves name and price — client only sent productId + quantity
-                    ProductCatalogService.ProductInfo product =
-                            productCatalogService.resolve(itemReq.getProductId());
+                    // Server resolves name and price from product-service (synchronous REST).
+                    // The client only sent productId + quantity; it never sets the price.
+                    ProductInfo product =
+                            productCatalogClient.resolve(itemReq.getProductId());
 
                     return OrderItem.builder()
                             .productId(itemReq.getProductId())
@@ -84,6 +88,7 @@ public class OrderService {
 
         items.forEach(order::addItem);
 
+
         // ── Calculate total ───────────────────────────────────────────────────
         BigDecimal total = items.stream()
                 .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
@@ -94,7 +99,7 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
         log.info("[ORDER-SERVICE] Order persisted | orderId={} | total={} {}",
-                savedOrder.getOrderId(), total, request.getCurrency());
+                savedOrder.getOrderId(), total, defaultCurrency);
 
         // ── Publish OrderCreated event ────────────────────────────────────────
         OrderCreatedEvent event = buildOrderCreatedEvent(savedOrder);
