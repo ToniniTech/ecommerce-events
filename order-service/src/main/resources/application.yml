@@ -32,9 +32,12 @@ spring:
     username: ${RABBITMQ_USER:guest}
     password: ${RABBITMQ_PASSWORD:guest}
     virtual-host: /
+    template:
+      observation-enabled: true      # publisher: inyecta traceparent en headers AMQP
     listener:
       simple:
         acknowledge-mode: manual
+        observation-enabled: true    # consumer: lee traceparent de los headers AMQP
         retry:
           enabled: true
           initial-interval: 2000

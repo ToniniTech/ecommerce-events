@@ -1,13 +1,17 @@
 package com.ecommerce.service;
 
+import com.ecommerce.client.ProductCatalogClient;
+import com.ecommerce.client.ProductInfo;
 import com.ecommerce.controller.dto.CreateOrderRequest;
 import com.ecommerce.controller.dto.OrderResponse;
 import com.ecommerce.domain.*;
 import com.ecommerce.exception.DuplicateOrderException;
 import com.ecommerce.messaging.OrderEventPublisher;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.mockito.Spy;
 import com.ecommerce.messaging.events.PaymentFailedEvent;
 import com.ecommerce.messaging.events.PaymentProcessedEvent;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,6 +20,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -33,9 +38,9 @@ class OrderServiceTest {
 
     @Mock private OrderRepository orderRepository;
     @Mock private OrderEventPublisher eventPublisher;
-    @Mock private ProductCatalogService productCatalogService;
     @Mock private OutboxEventRepository outboxEventRepository;
-    @Mock private ObjectMapper objectMapper;  // ← agregar esto
+    @Mock private ProductCatalogClient productCatalogClient;
+    @Spy private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     @InjectMocks private OrderService orderService;
 
@@ -43,15 +48,20 @@ class OrderServiceTest {
 
     private static final String CUSTOMER_ID = "cust-test-001";
     private static final String CUSTOMER_EMAIL = "test@example.com";
+    private static final String IDEM_KEY = "idem-key-001";
+
 
     private CreateOrderRequest validRequest;
 
     @BeforeEach
+
     void setUp() {
+
+        // @Value fields are not injected by Mockito, so set the store currency manually.
+        ReflectionTestUtils.setField(orderService, "defaultCurrency", "CLP");
+
         // New request shape: only productId + quantity (no name, no price)
         validRequest = CreateOrderRequest.builder()
-                .currency("USD")
-                .idempotencyKey("idem-key-001")
                 .items(List.of(
                         CreateOrderRequest.OrderItemRequest.builder()
                                 .productId("prod-001")
@@ -71,8 +81,8 @@ class OrderServiceTest {
     void shouldCreateOrderAndPublishEvent() {
         // Arrange - dado este caso
         when(orderRepository.existsByIdempotencyKey(any())).thenReturn(false);
-        when(productCatalogService.resolve("prod-001"))
-                .thenReturn(new ProductCatalogService.ProductInfo("Teclado Mecánico", new BigDecimal("129.99")));
+        when(productCatalogClient.resolve("prod-001"))
+                .thenReturn(new ProductInfo("prod-001","Teclado Mecánico", new BigDecimal("129.99")));
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
             Order o = inv.getArgument(0);
             o.setId(1L);
@@ -80,7 +90,7 @@ class OrderServiceTest {
         });
 
         // Act — note: customerId is now a separate parameter - cuando hago esto
-        OrderResponse response = orderService.createOrder(CUSTOMER_ID, CUSTOMER_EMAIL, validRequest);
+        OrderResponse response = orderService.createOrder(CUSTOMER_ID, CUSTOMER_EMAIL, IDEM_KEY, validRequest);
 
         // Assert - espero esto
         assertThat(response).isNotNull();
@@ -89,7 +99,6 @@ class OrderServiceTest {
         assertThat(response.getTotalAmount()).isEqualByComparingTo(new BigDecimal("259.98"));
 
         verify(outboxEventRepository, times(1)).save(any());
-        verify(eventPublisher, never()).publishOrderCreated(any());
         // Save called twice: once PENDING, once PAYMENT_PROCESSING
         verify(orderRepository, times(2)).save(any(Order.class));
     }
@@ -99,7 +108,6 @@ class OrderServiceTest {
     void shouldAutogenerateIdempotencyKey() {
         // Arrange — request without idempotencyKey
         CreateOrderRequest requestWithoutKey = CreateOrderRequest.builder()
-                .currency("USD")
                 .items(List.of(
                         CreateOrderRequest.OrderItemRequest.builder()
                                 .productId("prod-001")
@@ -109,14 +117,14 @@ class OrderServiceTest {
                 .build();
 
         when(orderRepository.existsByIdempotencyKey(any())).thenReturn(false);
-        when(productCatalogService.resolve("prod-001"))
-                .thenReturn(new ProductCatalogService.ProductInfo("Teclado Mecánico", new BigDecimal("129.99")));
+        when(productCatalogClient.resolve("prod-001"))
+                .thenReturn(new ProductInfo("prod-001","Teclado Mecánico", new BigDecimal("129.99")));
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
 
         ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
 
         // Act
-        orderService.createOrder(CUSTOMER_ID, CUSTOMER_EMAIL, requestWithoutKey);
+        orderService.createOrder(CUSTOMER_ID, CUSTOMER_EMAIL,null, requestWithoutKey);
 
         // Assert — idempotencyKey must be set even though client didn't send it
         verify(orderRepository, atLeastOnce()).save(captor.capture());
@@ -131,12 +139,14 @@ class OrderServiceTest {
         when(orderRepository.existsByIdempotencyKey("idem-key-001")).thenReturn(true);
 
         // Act & Assert / cuando hago esto
-        assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_ID, CUSTOMER_EMAIL, validRequest))
+        assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_ID, CUSTOMER_EMAIL, IDEM_KEY, validRequest))
                 .isInstanceOf(DuplicateOrderException.class)
                 .hasMessageContaining("idem-key-001");
 
-        verify(eventPublisher, never()).publishOrderCreated(any());
-        verify(productCatalogService, never()).resolve(any());
+        // OrderService no longer publishes directly: it writes to the outbox.
+        verify(outboxEventRepository, never()).save(any());
+        verify(orderRepository, never()).save(any());
+        verify(productCatalogClient, never()).resolve(any());
     }
 
         @Test
@@ -201,11 +211,10 @@ class OrderServiceTest {
     @DisplayName("should resolve product name and price from catalog, not from client")
     void shouldResolvePriceFromCatalogNotFromClient() {
         // Arrange — client sends prod-002, catalog returns Mouse at $49.99
-        when(productCatalogService.resolve("prod-002"))
-                .thenReturn(new ProductCatalogService.ProductInfo("Mouse Inalámbrico", new BigDecimal("49.99")));
+        when(productCatalogClient.resolve("prod-002"))
+                .thenReturn(new ProductInfo("prod-001" , "Mouse Inalámbrico", new BigDecimal("49.99")));
 
         CreateOrderRequest request = CreateOrderRequest.builder()
-                .currency("USD")
                 .items(List.of(
                         CreateOrderRequest.OrderItemRequest.builder()
                                 .productId("prod-002")
@@ -220,7 +229,7 @@ class OrderServiceTest {
         ArgumentCaptor<Order> captor = ArgumentCaptor.forClass(Order.class);
 
         // Act
-        orderService.createOrder(CUSTOMER_ID, CUSTOMER_EMAIL, request);
+        orderService.createOrder(CUSTOMER_ID, CUSTOMER_EMAIL, IDEM_KEY, request);
 
         // Assert — total = 3 × $49.99 = $149.97, name comes from catalog
         verify(orderRepository, atLeastOnce()).save(captor.capture());
