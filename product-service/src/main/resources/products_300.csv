@@ -1,0 +1,301 @@
+id,productId,name,price,stock,active
+1,P0001,Cebolla 1kg,1.13,7,true
+2,P0002,Chocolate 100g,2.20,63,true
+3,P0003,Queso gauda 200g,3.15,189,true
+4,P0004,Sal fina 1kg,2.19,23,true
+5,P0005,Pescado merluza 400g,5.88,9,true
+6,P0006,Arroz integral 1kg,1.73,56,true
+7,P0007,Queso gauda 200g,4.09,155,true
+8,P0008,Arroz integral 1kg,2.93,51,true
+9,P0009,Naranja 1kg,3.49,108,true
+10,P0010,Queso gauda 200g,3.94,151,true
+11,P0011,Pan molde 750g,2.31,195,true
+12,P0012,Shampoo 400ml,4.30,179,true
+13,P0013,Ketchup 500g,3.07,72,true
+14,P0014,Leche entera 1L,1.80,196,true
+15,P0015,Té 20 bolsitas,2.36,24,true
+16,P0016,Atún en lata 170g,1.94,92,true
+17,P0017,Galletas chocolate 150g,1.97,12,true
+18,P0018,Limón 1kg,2.97,138,true
+19,P0019,Aceite vegetal 1L,4.46,21,true
+20,P0020,Carne molida 500g,5.95,161,true
+21,P0021,Papa 1kg,1.62,148,true
+22,P0022,Yogur natural 1kg,2.67,12,true
+23,P0023,Lechuga unidad,1.78,198,true
+24,P0024,Cereal de maíz 300g,3.10,60,true
+25,P0025,Sal fina 1kg,1.77,72,true
+26,P0026,Mostaza 250g,2.53,42,true
+27,P0027,Galletas soda 200g,2.00,54,true
+28,P0028,Lechuga unidad,1.88,180,true
+29,P0029,Manzana 1kg,2.48,156,true
+30,P0030,Cebolla 1kg,1.28,137,true
+31,P0031,Limón 1kg,2.42,42,true
+32,P0032,Mostaza 250g,2.57,70,true
+33,P0033,Cebolla 1kg,2.27,57,true
+34,P0034,Manzana 1kg,3.13,197,true
+35,P0035,Papel higiénico 4 rollos,3.94,59,true
+36,P0036,Pasta dental 100ml,2.28,81,true
+37,P0037,Sardinas en lata 125g,2.08,17,true
+38,P0038,Yogur frutilla 120g,2.35,184,true
+39,P0039,Café molido 250g,3.74,168,true
+40,P0040,Agua mineral 1.5L,2.01,165,true
+41,P0041,Mostaza 250g,1.96,68,true
+42,P0042,Aceite de oliva 500ml,6.53,191,true
+43,P0043,Carne molida 500g,6.57,68,true
+44,P0044,Chocolate 100g,2.99,110,true
+45,P0045,Pescado merluza 400g,5.82,93,true
+46,P0046,Queso gauda 200g,3.15,131,true
+47,P0047,Agua mineral 1.5L,1.23,194,true
+48,P0048,Fideos penne 500g,1.38,40,true
+49,P0049,Cebolla 1kg,1.25,175,true
+50,P0050,Ketchup 500g,2.36,99,true
+51,P0051,Atún en lata 170g,2.89,136,true
+52,P0052,Mantequilla 250g,3.81,3,true
+53,P0053,Manzana 1kg,2.59,175,true
+54,P0054,Pollo entero kg,5.18,197,true
+55,P0055,Tomate 1kg,2.37,29,true
+56,P0056,Cereal de maíz 300g,4.01,41,true
+57,P0057,Mostaza 250g,1.60,185,true
+58,P0058,Limón 1kg,2.47,129,true
+59,P0059,Detergente ropa 1L,4.65,130,true
+60,P0060,Sal fina 1kg,1.56,164,true
+61,P0061,Bebida cola 1.5L,2.30,40,true
+62,P0062,Galletas soda 200g,1.51,139,true
+63,P0063,Papel higiénico 4 rollos,5.15,1,true
+64,P0064,Zanahoria 1kg,1.72,126,true
+65,P0065,Arroz integral 1kg,1.78,93,true
+66,P0066,Shampoo 400ml,4.68,62,true
+67,P0067,Fideos penne 500g,1.71,146,true
+68,P0068,Azúcar 1kg,1.31,188,true
+69,P0069,Agua mineral 1.5L,1.17,195,true
+70,P0070,Pollo entero kg,4.82,33,true
+71,P0071,Lechuga unidad,2.41,141,true
+72,P0072,Leche descremada 1L,1.87,136,true
+73,P0073,Zanahoria 1kg,1.98,55,true
+74,P0074,Pollo entero kg,5.01,183,true
+75,P0075,Avena 500g,2.82,172,true
+76,P0076,Tomate 1kg,2.45,113,true
+77,P0077,Jugo de manzana 1L,3.15,31,true
+78,P0078,Jamón laminado 200g,4.07,17,true
+79,P0079,Té 20 bolsitas,2.15,151,true
+80,P0080,Carne molida 500g,5.78,151,true
+81,P0081,Queso gauda 200g,2.81,19,true
+82,P0082,Naranja 1kg,2.25,59,true
+83,P0083,Harina 1kg,1.38,85,true
+84,P0084,Harina 1kg,2.61,61,true
+85,P0085,Pan molde 750g,3.54,55,true
+86,P0086,Pollo entero kg,4.83,186,true
+87,P0087,Vacuno posta 500g,7.47,122,true
+88,P0088,Jamón laminado 200g,4.71,105,true
+89,P0089,Yogur natural 1kg,2.74,25,true
+90,P0090,Lechuga unidad,2.30,91,true
+91,P0091,Ketchup 500g,3.25,120,true
+92,P0092,Limón 1kg,1.93,173,true
+93,P0093,Tomate 1kg,1.75,16,true
+94,P0094,Sardinas en lata 125g,2.26,28,true
+95,P0095,Jamón laminado 200g,3.99,49,true
+96,P0096,Pollo entero kg,5.64,36,true
+97,P0097,Ketchup 500g,2.66,72,true
+98,P0098,Mostaza 250g,2.23,20,true
+99,P0099,Mayonesa 500g,3.90,26,true
+100,P0100,Fideos penne 500g,2.48,4,true
+101,P0101,Azúcar 1kg,1.70,43,true
+102,P0102,Salsa de tomate 200g,2.34,124,true
+103,P0103,Yogur frutilla 120g,1.92,16,true
+104,P0104,Leche descremada 1L,2.17,1,true
+105,P0105,Atún en lata 170g,2.37,117,true
+106,P0106,Cereal de maíz 300g,3.98,179,true
+107,P0107,Limón 1kg,3.22,170,true
+108,P0108,Naranja 1kg,3.34,40,true
+109,P0109,Yogur natural 1kg,3.25,56,true
+110,P0110,Fideos penne 500g,2.58,189,true
+111,P0111,Pollo entero kg,4.65,192,true
+112,P0112,Café molido 250g,3.34,13,true
+113,P0113,Pescado merluza 400g,6.02,129,true
+114,P0114,Jugo de manzana 1L,2.40,15,true
+115,P0115,Bebida cola 1.5L,2.00,48,true
+116,P0116,Harina 1kg,1.47,173,true
+117,P0117,Jamón laminado 200g,4.53,31,true
+118,P0118,Vacuno posta 500g,6.63,149,true
+119,P0119,Zanahoria 1kg,1.00,159,true
+120,P0120,Azúcar 1kg,2.17,169,true
+121,P0121,Pescado merluza 400g,6.24,134,true
+122,P0122,Café molido 250g,3.86,53,true
+123,P0123,Lechuga unidad,2.00,62,true
+124,P0124,Mantequilla 250g,3.41,34,true
+125,P0125,Lechuga unidad,1.96,118,true
+126,P0126,Café molido 250g,3.38,3,true
+127,P0127,Mostaza 250g,3.04,26,true
+128,P0128,Harina 1kg,2.67,55,true
+129,P0129,Bebida cola 1.5L,2.47,34,true
+130,P0130,Galletas chocolate 150g,1.47,63,true
+131,P0131,Galletas soda 200g,1.82,41,true
+132,P0132,Mayonesa 500g,3.89,181,true
+133,P0133,Avena 500g,3.15,3,true
+134,P0134,Lechuga unidad,2.61,77,true
+135,P0135,Lechuga unidad,1.46,35,true
+136,P0136,Mantequilla 250g,2.69,28,true
+137,P0137,Chocolate 100g,2.91,40,true
+138,P0138,Pan molde 750g,3.02,155,true
+139,P0139,Yogur frutilla 120g,1.77,53,true
+140,P0140,Manzana 1kg,2.97,130,true
+141,P0141,Agua mineral 1.5L,1.64,14,true
+142,P0142,Azúcar 1kg,2.18,71,true
+143,P0143,Fideos spaghetti 500g,0.99,86,true
+144,P0144,Papel higiénico 4 rollos,4.13,164,true
+145,P0145,Mantequilla 250g,2.81,190,true
+146,P0146,Mayonesa 500g,3.91,181,true
+147,P0147,Ketchup 500g,3.63,3,true
+148,P0148,Aceite vegetal 1L,3.69,177,true
+149,P0149,Leche entera 1L,2.64,10,true
+150,P0150,Galletas soda 200g,2.59,142,true
+151,P0151,Leche entera 1L,2.35,33,true
+152,P0152,Fideos spaghetti 500g,1.77,94,true
+153,P0153,Lavalozas 1L,2.70,92,true
+154,P0154,Yogur frutilla 120g,1.53,171,true
+155,P0155,Sal fina 1kg,1.70,200,true
+156,P0156,Carne molida 500g,6.24,159,true
+157,P0157,Chocolate 100g,1.89,61,true
+158,P0158,Leche descremada 1L,1.65,106,true
+159,P0159,Arroz integral 1kg,1.95,189,true
+160,P0160,Té 20 bolsitas,3.15,172,true
+161,P0161,Chocolate 100g,2.13,69,true
+162,P0162,Leche descremada 1L,1.47,98,true
+163,P0163,Fideos spaghetti 500g,2.19,57,true
+164,P0164,Yogur natural 1kg,3.67,90,true
+165,P0165,Avena 500g,2.38,58,true
+166,P0166,Arroz integral 1kg,1.99,103,true
+167,P0167,Té 20 bolsitas,2.81,18,true
+168,P0168,Papel higiénico 4 rollos,4.51,90,true
+169,P0169,Tomate 1kg,2.80,103,true
+170,P0170,Manzana 1kg,3.67,85,true
+171,P0171,Arroz integral 1kg,1.79,67,true
+172,P0172,Huevos docena,4.28,68,true
+173,P0173,Fideos spaghetti 500g,1.26,153,true
+174,P0174,Ketchup 500g,3.08,187,true
+175,P0175,Lavalozas 1L,3.40,112,true
+176,P0176,Zanahoria 1kg,2.20,30,true
+177,P0177,Atún en lata 170g,3.17,49,true
+178,P0178,Mantequilla 250g,2.51,182,true
+179,P0179,Ketchup 500g,2.20,134,true
+180,P0180,Shampoo 400ml,5.27,176,true
+181,P0181,Limón 1kg,2.30,94,true
+182,P0182,Ketchup 500g,2.37,171,true
+183,P0183,Té 20 bolsitas,2.90,170,true
+184,P0184,Aceite vegetal 1L,4.26,130,true
+185,P0185,Avena 500g,2.84,84,true
+186,P0186,Sardinas en lata 125g,2.15,142,true
+187,P0187,Aceite de oliva 500ml,6.39,108,true
+188,P0188,Lechuga unidad,2.17,174,true
+189,P0189,Chocolate 100g,1.94,158,true
+190,P0190,Vacuno posta 500g,6.77,104,true
+191,P0191,Carne molida 500g,5.20,78,true
+192,P0192,Cereal de maíz 300g,3.43,111,true
+193,P0193,Lavalozas 1L,4.08,156,true
+194,P0194,Tomate 1kg,2.32,120,true
+195,P0195,Mayonesa 500g,3.63,173,true
+196,P0196,Yogur frutilla 120g,2.20,122,true
+197,P0197,Lavalozas 1L,3.03,169,true
+198,P0198,Azúcar 1kg,1.82,132,true
+199,P0199,Lechuga unidad,2.05,24,true
+200,P0200,Pasta dental 100ml,2.80,173,true
+201,P0201,Avena 500g,2.37,51,true
+202,P0202,Leche entera 1L,1.31,12,true
+203,P0203,Jamón laminado 200g,4.71,157,true
+204,P0204,Papel higiénico 4 rollos,3.98,117,true
+205,P0205,Salsa de tomate 200g,2.57,50,true
+206,P0206,Naranja 1kg,3.08,127,true
+207,P0207,Sardinas en lata 125g,2.02,38,true
+208,P0208,Tomate 1kg,1.51,193,true
+209,P0209,Papel higiénico 4 rollos,4.07,200,true
+210,P0210,Ketchup 500g,2.76,46,true
+211,P0211,Shampoo 400ml,5.22,119,true
+212,P0212,Fideos penne 500g,2.52,64,true
+213,P0213,Aceite vegetal 1L,4.66,35,true
+214,P0214,Shampoo 400ml,5.08,171,true
+215,P0215,Jugo de manzana 1L,3.43,153,true
+216,P0216,Café molido 250g,4.33,157,true
+217,P0217,Pasta dental 100ml,3.49,110,true
+218,P0218,Carne molida 500g,6.34,41,true
+219,P0219,Chocolate 100g,2.71,116,true
+220,P0220,Mantequilla 250g,3.03,164,true
+221,P0221,Pan molde 750g,3.63,125,true
+222,P0222,Cebolla 1kg,1.46,71,true
+223,P0223,Mayonesa 500g,2.69,183,true
+224,P0224,Cereal de maíz 300g,3.50,70,true
+225,P0225,Té 20 bolsitas,2.91,139,true
+226,P0226,Azúcar 1kg,1.45,39,true
+227,P0227,Queso gauda 200g,3.78,178,true
+228,P0228,Leche entera 1L,1.79,17,true
+229,P0229,Salsa de tomate 200g,2.14,85,true
+230,P0230,Pollo entero kg,5.69,107,true
+231,P0231,Fideos penne 500g,1.62,108,true
+232,P0232,Atún en lata 170g,3.19,179,true
+233,P0233,Arroz integral 1kg,2.97,98,true
+234,P0234,Jugo de naranja 1L,2.11,91,true
+235,P0235,Avena 500g,2.79,108,true
+236,P0236,Pollo entero kg,5.89,155,true
+237,P0237,Queso gauda 200g,4.04,57,true
+238,P0238,Pan molde 750g,3.41,125,true
+239,P0239,Arroz integral 1kg,2.49,87,true
+240,P0240,Lechuga unidad,2.23,186,true
+241,P0241,Leche descremada 1L,2.39,33,true
+242,P0242,Papa 1kg,2.06,7,true
+243,P0243,Sardinas en lata 125g,2.84,170,true
+244,P0244,Arroz integral 1kg,1.71,165,true
+245,P0245,Ketchup 500g,2.54,119,true
+246,P0246,Huevos docena,2.92,67,true
+247,P0247,Atún en lata 170g,2.53,55,true
+248,P0248,Mostaza 250g,2.43,87,true
+249,P0249,Detergente ropa 1L,5.17,72,true
+250,P0250,Detergente ropa 1L,5.27,65,true
+251,P0251,Azúcar 1kg,2.30,5,true
+252,P0252,Chocolate 100g,2.88,14,true
+253,P0253,Galletas chocolate 150g,1.87,167,true
+254,P0254,Harina 1kg,1.40,194,true
+255,P0255,Arroz integral 1kg,2.13,52,true
+256,P0256,Arroz integral 1kg,1.89,62,true
+257,P0257,Aceite de oliva 500ml,7.11,172,true
+258,P0258,Aceite vegetal 1L,4.94,56,true
+259,P0259,Mostaza 250g,2.25,197,true
+260,P0260,Galletas soda 200g,1.52,156,true
+261,P0261,Zanahoria 1kg,1.19,200,true
+262,P0262,Pasta dental 100ml,2.61,80,true
+263,P0263,Sal fina 1kg,2.28,7,true
+264,P0264,Avena 500g,3.27,174,true
+265,P0265,Atún en lata 170g,2.71,184,true
+266,P0266,Yogur natural 1kg,2.69,152,true
+267,P0267,Plátano 1kg,2.52,27,true
+268,P0268,Plátano 1kg,2.67,176,true
+269,P0269,Zanahoria 1kg,1.20,145,true
+270,P0270,Lavalozas 1L,2.70,89,true
+271,P0271,Pollo entero kg,5.59,170,true
+272,P0272,Galletas soda 200g,1.27,130,true
+273,P0273,Tomate 1kg,2.37,4,true
+274,P0274,Salsa de tomate 200g,2.35,28,true
+275,P0275,Ketchup 500g,3.12,163,true
+276,P0276,Mostaza 250g,1.99,112,true
+277,P0277,Huevos docena,4.13,167,true
+278,P0278,Pan molde 750g,3.67,199,true
+279,P0279,Jugo de naranja 1L,3.29,112,true
+280,P0280,Pasta dental 100ml,2.88,83,true
+281,P0281,Jamón laminado 200g,3.72,72,true
+282,P0282,Mayonesa 500g,3.12,193,true
+283,P0283,Mostaza 250g,3.05,157,true
+284,P0284,Lechuga unidad,2.17,87,true
+285,P0285,Arroz integral 1kg,2.76,84,true
+286,P0286,Huevos docena,4.04,55,true
+287,P0287,Galletas chocolate 150g,1.96,88,true
+288,P0288,Pan molde 750g,3.00,143,true
+289,P0289,Arroz 1kg,2.52,49,true
+290,P0290,Azúcar 1kg,1.71,185,true
+291,P0291,Salsa de tomate 200g,2.35,143,true
+292,P0292,Detergente ropa 1L,4.81,177,true
+293,P0293,Jugo de naranja 1L,3.35,115,true
+294,P0294,Lavalozas 1L,2.64,24,true
+295,P0295,Cereal de maíz 300g,3.46,104,true
+296,P0296,Plátano 1kg,2.52,79,true
+297,P0297,Lechuga unidad,2.68,95,true
+298,P0298,Jugo de naranja 1L,3.51,136,true
+299,P0299,Galletas chocolate 150g,2.38,191,true
+300,P0300,Carne molida 500g,6.04,91,true
