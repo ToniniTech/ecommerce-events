@@ -27,7 +27,7 @@ jwt:
   # In production: use a 256-bit random secret stored in a secrets manager (AWS Secrets Manager, Vault)
   # Never hardcode in production — this is for demo only
   secret: ${JWT_SECRET}
-  expiration-ms: ${JWT_EXPIRATION_MS:30000}   # 24 hours
+  expiration-ms: ${JWT_EXPIRATION_MS:1800000}   # 24 hours
   refresh-expiration-ms: ${JWT_REFRESH_MS:604800000}  # 7 days
 
 management:

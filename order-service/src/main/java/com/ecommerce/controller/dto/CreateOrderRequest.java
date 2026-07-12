@@ -10,16 +10,9 @@ import java.util.List;
  * Request body para POST /api/orders
  *
  * Lo que el cliente ENVÍA:
- *   - customerEmail  → quién hace el pedido
- *   - currency       → moneda (USD, EUR, ARS)
- *   - idempotencyKey → opcional, protección contra doble-click en el frontend
  *   - items          → solo productId + quantity (sin precio)
- *
- * Lo que el cliente NO envía (el servidor lo resuelve):
- *   - customerId  → extraído del header X-Customer-Id (simula extracción de JWT)
- *   - productName → resuelto desde ProductCatalogService
- *   - unitPrice   → resuelto desde ProductCatalogService (el cliente nunca decide el precio)
  */
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
