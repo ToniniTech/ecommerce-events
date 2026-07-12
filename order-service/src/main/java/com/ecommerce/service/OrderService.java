@@ -113,11 +113,11 @@ public class OrderService {
                     .build();
 
             outboxEventRepository.save(outboxEvent);
-            log.info("[ORDER-SERVICE] OutboxEvent guardado | eventId={}", event.getEventId());
+            log.info("[ORDER-SERVICE] OutboxEvent saved | eventId={}", event.getEventId());
 
         } catch (JsonProcessingException e) {
-            log.error("[ORDER-SERVICE] Error serializando OutboxEvent | orderId={}", savedOrder.getOrderId(), e);
-            throw new RuntimeException("Error al serializar el evento de orden", e);
+            log.error("[ORDER-SERVICE] Error serializing OutboxEvent | orderId={}", savedOrder.getOrderId(), e);
+            throw new RuntimeException("Error serializing the order event", e);
         }
 
         savedOrder.markAsPaymentProcessing();
@@ -181,12 +181,7 @@ public class OrderService {
                 .items(itemDtos)
                 .build();
 
-//        // 👇 romper serialización a propósito
-//        event.setNonSerializable(new Object() {
-//            public String getBroken() {
-//                throw new RuntimeException("boom");
-//            }
-//        });
+
 
     }
 }

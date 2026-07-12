@@ -181,7 +181,7 @@ services:
       --collation-server=utf8mb4_unicode_ci
       --default-authentication-plugin=mysql_native_password
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "productuser", "-productpass"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "productuser", "-pproductpass"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -202,7 +202,7 @@ services:
       MYSQL_USER: authuser
       MYSQL_PASSWORD: authpass
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-in-production}
-      JWT_EXPIRATION_MS: 500000
+      JWT_EXPIRATION_MS: 1800000
       JWT_REFRESH_MS: 604800000
       ZIPKIN_HOST: zipkin
     depends_on:
@@ -228,7 +228,7 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: guest
       RABBITMQ_PASSWORD: guest
-      PRODUCT_SERVICE_URL: http://product-service:8085  # ← agregar esto
+      PRODUCT_SERVICE_URL: http://product-service:8085
       ZIPKIN_HOST: zipkin
       # Order Service calls Auth Service to validate JWT tokens
       AUTH_SERVICE_URL: http://auth-service:8084
@@ -240,7 +240,7 @@ services:
         condition: service_healthy
       auth-service:
         condition: service_healthy
-      product-service: # ← agregar esto
+      product-service:
           condition: service_healthy
     restart: on-failure:5
     networks:
@@ -316,7 +316,7 @@ services:
         condition: service_healthy
       zipkin:
         condition: service_started
-    healthcheck: # ← agregar todo esto
+    healthcheck:
         test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8085/actuator/health" ]
         interval: 10s
         timeout: 5s
