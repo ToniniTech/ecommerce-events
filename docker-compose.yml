@@ -181,7 +181,7 @@ services:
       --collation-server=utf8mb4_unicode_ci
       --default-authentication-plugin=mysql_native_password
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "productuser", "-pproductpass"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "productuser", "-productpass"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -321,7 +321,7 @@ services:
         interval: 10s
         timeout: 5s
         retries: 10
-        start_period: 40s
+        start_period: 30s
     restart: on-failure:5
     networks:
       - ecommerce-net
