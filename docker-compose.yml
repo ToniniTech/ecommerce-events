@@ -201,7 +201,7 @@ services:
       MYSQL_HOST: auth-db
       MYSQL_USER: authuser
       MYSQL_PASSWORD: authpass
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-in-production}
       JWT_EXPIRATION_MS: 500000
       JWT_REFRESH_MS: 604800000
       ZIPKIN_HOST: zipkin
@@ -232,7 +232,7 @@ services:
       ZIPKIN_HOST: zipkin
       # Order Service calls Auth Service to validate JWT tokens
       AUTH_SERVICE_URL: http://auth-service:8084
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-in-production}
     depends_on:
       order-db:
         condition: service_healthy
