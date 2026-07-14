@@ -31,7 +31,7 @@ class OutboxProcessorIntegrationTest extends IntegrationTestBase {
     @Test
     @DisplayName("should process PENDING outbox events and mark them as PROCESSED")
     void shouldProcessPendingOutboxEvents() {
-        // Arrange — insertar un evento pendiente directamente en la DB
+        // Arrange — Inserting a PENDING event directly to the database
         OutboxEvent pendingEvent = OutboxEvent.builder()
                 .eventId(UUID.randomUUID().toString())
                 .eventType("ORDER_CREATED")
@@ -44,7 +44,7 @@ class OutboxProcessorIntegrationTest extends IntegrationTestBase {
         // Act — el processor lo recoge y publica
         outboxProcessor.process();
 
-        // Assert — el evento debe estar marcado como PROCESSED en MySQL
+        // Assert — The event should be marked as PUBLISHED
         OutboxEvent processed = outboxEventRepository
                 .findById(pendingEvent.getId())
                 .orElseThrow();
@@ -69,7 +69,7 @@ class OutboxProcessorIntegrationTest extends IntegrationTestBase {
         // Act
         outboxProcessor.process();
 
-        // Assert — el RabbitMQ no debe haber recibido nada
+        // Assert — RabbitMQ should not have received anything
         OutboxEvent result = outboxEventRepository.findById(saved.getId())
                         .orElseThrow();
 
