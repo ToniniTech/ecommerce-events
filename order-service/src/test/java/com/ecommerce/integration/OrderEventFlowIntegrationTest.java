@@ -16,12 +16,11 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -44,20 +43,28 @@ class OrderEventFlowIntegrationTest extends IntegrationTestBase {
     private OutboxEventRepository outboxEventRepository;
     @Autowired
     private OutboxProcessor outboxProcessor;
+    @Autowired
+    private AmqpAdmin amqpAdmin;
+
+    private final ObjectMapper objectMapper =
+            new ObjectMapper().registerModule(new JavaTimeModule());
+
 
 
     @BeforeEach
     void setUp() {
-        // Limpiar entre tests para independencia
+        // Clean among between tests for isolation
         outboxEventRepository.deleteAll();
         orderRepository.deleteAll();
+        amqpAdmin.purgeQueue("order.created.queue", false);
     }
+
 
     @Test
     @DisplayName("should publish OrderCreated event to RabbitMQ after order creation")
     void shouldPublishOrderCreatedEventToRabbitMQ() throws InterruptedException {
-        // Arrange
 
+        // Arrange
         CreateOrderRequest request = CreateOrderRequest.builder()
                 .items(List.of(
                         CreateOrderRequest.OrderItemRequest.builder()
@@ -65,49 +72,38 @@ class OrderEventFlowIntegrationTest extends IntegrationTestBase {
                 ))
                 .build();
 
-        // Act — crear la orden (esto guarda en Outbox, no publica directo)
+        // Act — create the order (this saves it to the Outbox; it does not publish directly)
         OrderResponse response = orderService.createOrder(
                 "cust-event-001", "event@test.com", "idk-001", request);
 
-        // Disparar el OutboxProcessor manualmente
-        // (en producción lo hace el @Scheduled cada pocos segundos)
+
+        // Manually trigger the OutboxProcessor
+        // (in production, the @Scheduled task does this every few seconds)
         outboxProcessor.process();
 
-        // Esperar un momento para que RabbitMQ procese
-        // En tests reales usarías Awaitility en lugar de Thread.sleep
-        Thread.sleep(500);
+        // Wait a moment for RabbitMQ to process
+        // Assert — keep polling the queue until the message shows up (or we time out)
+        await()
+                .atMost(5, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .untilAsserted(() -> {
+                    Message message = rabbitTemplate.receive("order.created.queue");
+                    assertThat(message).isNotNull();
 
-        // Assert — verificar que el mensaje llegó a la queue real
-        Message message = rabbitTemplate.receive(
-                "order.created.queue",
-                1000  // timeout 2 segundos
-        );
+                    OrderCreatedEvent event = objectMapper.readValue(
+                            message.getBody(), OrderCreatedEvent.class);
 
-        assertThat(message).isNotNull();
-
-        // Deserializar el evento del mensaje
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        OrderCreatedEvent event;
-        try {
-            event = objectMapper.readValue(
-                    message.getBody(), OrderCreatedEvent.class);
-        } catch (IOException e) {
-            throw new AssertionError(
-                    "No se pudo deserializar OrderCreatedEvent", e);
-
-        }
-
-        assertThat(event.getOrderId()).isEqualTo(response.getOrderId());
-        assertThat(event.getCustomerId()).isEqualTo("cust-event-001");
-        assertThat(event.getTotalAmount())
-                .isEqualByComparingTo(new BigDecimal("129.99"));
+                    assertThat(event.getOrderId()).isEqualTo(response.getOrderId());
+                    assertThat(event.getCustomerId()).isEqualTo("cust-event-001");
+                    assertThat(event.getTotalAmount())
+                            .isEqualByComparingTo(new BigDecimal("129.99"));
+                });
     }
 
     @Test
     @DisplayName("should update order to PAID when PaymentProcessed event arrives")
     void shouldUpdateOrderStatusWhenPaymentProcessedEventArrives() {
-        // Arrange — crear una orden primero
+        // Arrange — create an order first
         CreateOrderRequest request = CreateOrderRequest.builder()
                 .items(List.of(
                         CreateOrderRequest.OrderItemRequest.builder()
@@ -118,7 +114,7 @@ class OrderEventFlowIntegrationTest extends IntegrationTestBase {
         OrderResponse created = orderService.createOrder(
                 "cust-payment-001", "payment@test.com", "idk-001", request);
 
-        // Act — simular que el payment-service publicó PaymentProcessed
+        // Act — simulate the published payment service "Payment Processed"
         PaymentProcessedEvent paymentEvent = PaymentProcessedEvent.builder()
                 .eventId(UUID.randomUUID().toString())
                 .orderId(created.getOrderId())
@@ -128,14 +124,13 @@ class OrderEventFlowIntegrationTest extends IntegrationTestBase {
                 .processedAt(LocalDateTime.now())
                 .build();
 
-        // Publicar el evento directamente en RabbitMQ real
+        // Publish the event directly to real RabbitMQ
         rabbitTemplate.convertAndSend(
                 "payments.exchange",
                 "payment.processed",
                 paymentEvent
         );
 
-        // Esperar con Awaitility — mucho mejor que Thread.sleep
         await()
                 .atMost(5, TimeUnit.SECONDS)
                 .pollInterval(200, TimeUnit.MILLISECONDS)

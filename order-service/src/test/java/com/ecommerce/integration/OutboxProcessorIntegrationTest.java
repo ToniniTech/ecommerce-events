@@ -24,8 +24,6 @@ class OutboxProcessorIntegrationTest extends IntegrationTestBase {
     @Autowired
     private OutboxEventRepository outboxEventRepository;
     @Autowired private OutboxProcessor outboxProcessor;
-    @Autowired private RabbitTemplate rabbitTemplate;
-    @Autowired private RabbitMQConfig rabbitMQConfig;
 
 
     @Test
