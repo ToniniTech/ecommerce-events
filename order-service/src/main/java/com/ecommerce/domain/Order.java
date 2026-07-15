@@ -19,7 +19,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class Order {
-    //Testing CI workflow
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
