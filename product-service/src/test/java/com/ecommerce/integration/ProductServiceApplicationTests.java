@@ -1,14 +1,11 @@
-package com.ecommerce;
+package com.ecommerce.integration;
 
+import com.ecommerce.service.IntegrationTestBase;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 
-@SpringBootTest
-@ActiveProfiles("test")
-class ProductServiceApplicationTests {
+
+class ProductServiceApplicationTests extends IntegrationTestBase {
 
     @Test
     void contextLoads() {
