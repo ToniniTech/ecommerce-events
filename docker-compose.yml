@@ -201,6 +201,8 @@ services:
       MYSQL_HOST: auth-db
       MYSQL_USER: authuser
       MYSQL_PASSWORD: authpass
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@ecommerce.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-neymarsantos123}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-in-production}
       JWT_EXPIRATION_MS: 1800000
       JWT_REFRESH_MS: 604800000

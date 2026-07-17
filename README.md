@@ -9,38 +9,38 @@
 ![Spring Security](https://img.shields.io/badge/Spring_Security-6DB33F?style=flat&logo=springsecurity&logoColor=white)
 ![Zipkin](https://img.shields.io/badge/Tracing-Zipkin-FF6C37?style=flat&logo=jaeger&logoColor=white)
 
-Sistema de microservicios e-commerce con arquitectura basada en eventos, comunicación mayoritariamente asíncrona mediante RabbitMQ, un catálogo síncrono aislado por REST, autenticación JWT stateless y trazabilidad distribuida con OpenTelemetry + Zipkin.
+E-commerce microservices system with an event-driven architecture, mostly asynchronous communication over RabbitMQ, a synchronous catalog isolated via REST, stateless JWT authentication, and distributed tracing with OpenTelemetry + Zipkin.
 
 ---
 
-## ¿Por qué este proyecto?
+## Why this project?
 
-La mayoría de los tutoriales de microservicios usan REST entre servicios, lo que crea acoplamiento oculto. Este proyecto demuestra cómo construir servicios que se comunican **sin conocerse entre sí**, tolerando fallos parciales sin afectar al sistema completo.
+Most microservices tutorials use REST between services, which creates hidden coupling. This project demonstrates how to build services that communicate **without knowing about each other**, tolerating partial failures without affecting the whole system.
 
-Si Payment Service se cae, las órdenes siguen creándose. Cuando vuelve, procesa todos los eventos pendientes automáticamente. Eso es resiliencia real.
+If Payment Service goes down, orders keep being created. When it comes back, it processes all pending events automatically. That's real resilience.
 
-El único acoplamiento síncrono es **deliberado**: Order Service consulta a Product Service por REST para resolver precio y disponibilidad en tiempo real, de modo que el cliente nunca dicta el precio. Es la excepción que confirma la regla, y está aislada con timeouts explícitos para evitar fallos en cascada.
+The only synchronous coupling is **deliberate**: Order Service queries Product Service over REST to resolve price and availability in real time, so the client never dictates the price. It's the exception that proves the rule, and it's isolated with explicit timeouts to prevent cascading failures.
 
 ---
 
-## Stack técnico
+## Tech stack
 
-| Capa | Tecnología |
+| Layer | Technology |
 |------|------------|
-| Lenguaje | Java 17 |
+| Language | Java 17 |
 | Framework | Spring Boot 3.2 |
-| Mensajería | RabbitMQ 3.12 + Spring AMQP |
-| Comunicación síncrona | Spring `RestClient` (Order → Product) con timeouts explícitos |
-| Seguridad | Spring Security + JWT (JJWT 0.12) |
-| Persistencia | Spring Data JPA + MySQL 8.0 |
-| Observabilidad | Micrometer Tracing + OpenTelemetry + Zipkin |
-| Infraestructura | Docker + Docker Compose |
+| Messaging | RabbitMQ 3.12 + Spring AMQP |
+| Synchronous communication | Spring `RestClient` (Order → Product) with explicit timeouts |
+| Security | Spring Security + JWT (JJWT 0.12) |
+| Persistence | Spring Data JPA + MySQL 8.0 |
+| Observability | Micrometer Tracing + OpenTelemetry + Zipkin |
+| Infrastructure | Docker + Docker Compose |
 | Testing | JUnit 5 + Testcontainers |
 | Build | Maven 3 |
 
 ---
 
-## Arquitectura
+## Architecture
 
 ```
 CLIENT (browser / Postman)
@@ -48,17 +48,17 @@ CLIENT (browser / Postman)
     ▼
 ┌─────────────────┐              ┌──────────────────────┐        ┌─────────────────────┐
 │  AUTH SERVICE   │              │   ORDER SERVICE      │──REST─►│  PRODUCT SERVICE    │
-│     :8084       │◄────JWT─────►│       :8081          │ precio │       :8085         │
-│   DB: auth_db   │  secreto     │   DB: order_db       │  +stock│   DB: product_db    │
-│                 │  compartido  │                      │◄───────│                     │
-│ /register       │              │ - extrae customerId  │        │ catálogo 300 prod.  │
-│ /login          │              │   del token JWT      │        │ (CRUD + optimistic  │
-│ /refresh        │              │ - resuelve precio    │        │  locking @Version)  │
-│ /logout         │              │   desde el catálogo  │        └─────────────────────┘
+│     :8084       │◄────JWT─────►│       :8081          │ price  │       :8085         │
+│   DB: auth_db   │  shared      │   DB: order_db       │  +stock│   DB: product_db    │
+│                 │  secret      │                      │◄───────│                     │
+│ /register       │              │ - extracts customerId│        │ 300-product catalog │
+│ /login          │              │   from the JWT       │        │ (CRUD + optimistic  │
+│ /refresh        │              │ - resolves price     │        │  locking @Version)  │
+│ /logout         │              │   from the catalog   │        └─────────────────────┘
 │ /admin/**       │              │ - Outbox Pattern     │
 └─────────────────┘              └──────────────────────┘
                                           │
-                                          │ publica OrderCreated (vía Outbox)
+                                          │ publishes OrderCreated (via Outbox)
                                           ▼
                                  ┌─────────────────────┐
                                  │   RABBITMQ :5672    │
@@ -75,81 +75,81 @@ CLIENT (browser / Postman)
                │ DB: payment_db   │              │ DB: notification_db   │
                │                  │              │                       │
                │ - gateway 80%    │              │ - order confirmation  │
-               │   éxito simulado │              │ - payment success     │
-               └──────────────────┘              │ - payment failure     │
-                          │                      └───────────────────────┘
-                          │ publica PaymentProcessed / PaymentFailed
+               │   simulated      │              │ - payment success     │
+               │   success        │              │ - payment failure     │
+               └──────────────────┘              └───────────────────────┘
+                          │                      
+                          │ publishes PaymentProcessed / PaymentFailed
                           ▼
                ┌──────────────────┐
                │  ORDER SERVICE   │
-               │ (actualiza estado│
+               │ (updates status  │
                │  PAID / FAILED)  │
                └──────────────────┘
 
-  Todos los servicios exportan trazas a ZIPKIN :9411 (traceId propagado por HTTP y por headers AMQP)
+  All services export traces to ZIPKIN :9411 (traceId propagated over HTTP and via AMQP headers)
 ```
 
 ---
 
-## Flujo de eventos
+## Event flow
 
-| Evento | Publicado por | Consumido por |
+| Event | Published by | Consumed by |
 |--------|--------------|---------------|
-| `OrderCreated` | Order Service (vía Outbox) | Payment Service, Notification Service |
+| `OrderCreated` | Order Service (via Outbox) | Payment Service, Notification Service |
 | `PaymentProcessed` | Payment Service | Order Service, Notification Service |
 | `PaymentFailed` | Payment Service | Order Service, Notification Service |
 
 ---
 
-## Decisiones de diseño
+## Design decisions
 
-**¿Por qué RabbitMQ y no REST entre servicios?**
+**Why RabbitMQ and not REST between services?**
 
-La comunicación HTTP síncrona crea acoplamiento temporal, si Payment Service cae, Order Service falla también. Con RabbitMQ, Order Service publica el evento y continúa independientemente. Los mensajes esperan en la queue hasta que Payment Service vuelva.
+Synchronous HTTP communication creates temporal coupling — if Payment Service goes down, Order Service fails too. With RabbitMQ, Order Service publishes the event and continues independently. Messages wait in the queue until Payment Service comes back.
 
-**¿Por qué entonces Product Service SÍ es síncrono (REST)?**
+**Why is Product Service synchronous (REST), then?**
 
-El precio y la disponibilidad deben resolverse **en el momento** de crear la orden, no de forma eventual: no puede existir una orden "provisional" sin precio confiable. Por eso Order Service consulta a Product Service por REST. El acoplamiento se acota con timeouts explícitos (connect 2s / read 3s) para que un Product Service lento nunca agote el thread pool de Order Service.
+Price and availability must be resolved **at the moment** the order is created, not eventually: a "provisional" order without a reliable price cannot exist. That's why Order Service queries Product Service over REST. The coupling is bounded with explicit timeouts (connect 2s / read 3s) so a slow Product Service never exhausts Order Service's thread pool.
 
-**¿Por qué una base de datos por servicio?**
+**Why a database per service?**
 
-Permite que cada servicio evolucione, escale y falle de forma completamente independiente. El costo es consistencia eventual, manejada mediante eventos y la tabla `processed_events` para idempotencia.
+It lets each service evolve, scale, and fail completely independently. The cost is eventual consistency, handled through events and the `processed_events` table for idempotency.
 
-**¿Por qué el patrón Outbox?**
+**Why the Outbox pattern?**
 
-Guardar la orden en MySQL y publicar el evento en RabbitMQ son dos sistemas distintos: si el segundo falla, se pierde el evento (dual-write problem). Con Outbox, el evento se persiste en la misma transacción que la orden y un poller lo publica después. La entrega queda garantizada aunque el broker esté caído en ese instante.
+Saving the order to MySQL and publishing the event to RabbitMQ are two separate systems: if the second one fails, the event is lost (dual-write problem). With Outbox, the event is persisted in the same transaction as the order, and a poller publishes it afterward. Delivery is guaranteed even if the broker is down at that instant.
 
-**¿Por qué JWT stateless y no sesiones?**
+**Why stateless JWT and not sessions?**
 
-En microservicios, las sesiones crean acoplamiento, todos los servicios necesitarían compartir el mismo store de sesiones. Con JWT, cada servicio valida el token localmente usando el secreto compartido. Sin llamadas HTTP al Auth Service por cada request.
-
+In microservices, sessions create coupling — every service would need to share the same session store. With JWT, each service validates the token locally using the shared secret. No HTTP calls to Auth Service on every request.
 
 ---
 
-## Patrones de producción implementados
+## Production patterns implemented
 
-| Patrón | Dónde | Propósito |
+| Pattern | Where | Purpose |
 |--------|-------|-----------|
-| **Database per Service** | 5 instancias MySQL | Autonomía e independencia total entre servicios |
-| **Outbox Pattern** | Order Service | Evento persistido en la misma transacción que la orden; poller lo publica — resuelve el dual-write |
-| **Saga Choreography** | Order → Payment → Order | Coordinación distribuida por eventos, sin orquestador central |
-| **Idempotencia** | Servicios event-driven | Tabla `processed_events` con `UNIQUE(event_id)` — evita doble procesamiento |
-| **Optimistic Locking** | Product Service | `@Version` en `Product` — detecta lost updates de stock y falla con 409 en vez de sobrescribir |
-| **Dead Letter Queue** | Cada queue | Mensajes fallidos tras 3 retries → DLQ para inspección manual |
-| **Retry con backoff** | Todos los consumers | 2s → 4s → 10s exponencial |
-| **Manual ACK** | Todos los consumers | Mensaje removido de la queue solo cuando se procesa exitosamente |
-| **Publisher confirms** | RabbitTemplate | Garantía de entrega al broker |
-| **Distributed Tracing** | Los 5 servicios | Micrometer + OpenTelemetry + Zipkin — un `traceId` cruza HTTP y AMQP |
-| **Autoridad de precio server-side** | Order + Product Service | El precio se resuelve desde el catálogo; el cliente nunca lo decide |
-| **Soft delete** | Product Service | `active = false` — preserva integridad referencial con órdenes existentes |
-| **JWT + Refresh Token** | Auth Service | Autenticación stateless con rotación de tokens |
-| **BCrypt passwords** | Auth Service | Hash con salt automático — nunca se guarda la contraseña |
-| **Account Locking** | Auth Service | Tabla `failed_attempts` — bloqueo automático tras 3 intentos fallidos |
-| **Role-Based Access (RBAC)** | Auth Service | Rutas `/api/auth/admin/**` restringidas al rol `ADMIN` |
+| **Database per Service** | 5 MySQL instances | Full autonomy and independence between services |
+| **Outbox Pattern** | Order Service | Event persisted in the same transaction as the order; poller publishes it — solves the dual-write problem |
+| **Saga Choreography** | Order → Payment → Order | Distributed coordination through events, with no central orchestrator |
+| **Idempotency** | Event-driven services | `processed_events` table with `UNIQUE(event_id)` — prevents double processing |
+| **Optimistic Locking** | Product Service | `@Version` on `Product` — detects lost stock updates and fails with 409 instead of overwriting |
+| **Dead Letter Queue** | Every queue | Messages failing after 3 retries → DLQ for manual inspection |
+| **Retry with backoff** | All consumers | 2s → 4s → 10s exponential |
+| **Manual ACK** | All consumers | Message removed from the queue only when processed successfully |
+| **Publisher confirms** | RabbitTemplate | Delivery guarantee to the broker |
+| **Distributed Tracing** | All 5 services | Micrometer + OpenTelemetry + Zipkin — one `traceId` crosses HTTP and AMQP |
+| **Server-side price authority** | Order + Product Service | Price is resolved from the catalog; the client never decides it |
+| **Soft delete** | Product Service | `active = false` — preserves referential integrity with existing orders |
+| **JWT + Refresh Token** | Auth Service | Stateless authentication with token rotation |
+| **BCrypt passwords** | Auth Service | Hash with automatic salt — the password is never stored |
+| **Account Locking** | Auth Service | `failed_attempts` table — automatic lock after 3 failed attempts |
+| **Role-Based Access (RBAC)** | Auth Service | `/api/auth/admin/**` routes restricted to the `ADMIN` role |
 
 ---
 
-## Estructura del proyecto
+## Project structure
 
 ```
 ecommerce-events/
@@ -159,67 +159,93 @@ ecommerce-events/
 │   ├── service/                # AuthService, UserDetailsServiceImpl
 │   └── controller/             # AuthController, AuthAdmController + DTOs
 │
-├── order-service/              # REST API protegida con JWT
+├── order-service/              # JWT-protected REST API
 │   ├── domain/                 # Order, OrderItem, OutboxEvent, ProcessedEvent
-│   ├── client/                 # ProductCatalogClient (RestClient hacia Product Service)
+│   ├── client/                 # ProductCatalogClient (RestClient to Product Service)
 │   ├── messaging/              # OrderEventPublisher, OutboxProcessor, PaymentEventConsumer
 │   ├── service/                # OrderService
 │   └── security/               # JwtService, JwtAuthenticationFilter
 │
-├── product-service/            # Catálogo síncrono (REST-only), sin eventos
+├── product-service/            # Synchronous catalog (REST-only), no events
 │   ├── domain/                 # Product (@Version), ProductRepository
 │   ├── mapper/                 # ProductMapper (entity ↔ DTO)
-│   ├── config/                 # CatalogCsvLoader (carga UPSERT del CSV al arrancar)
+│   ├── config/                 # CatalogCsvLoader (UPSERT load from CSV at startup)
 │   ├── service/                # ProductService (CRUD, stock, soft delete)
 │   └── controller/             # ProductController + DTOs
 │
-├── payment-service/            # Consume OrderCreated, simula gateway
+├── payment-service/            # Consumes OrderCreated, simulates gateway
 │   ├── domain/                 # Payment, PaymentStatus, ProcessedEvent
 │   ├── messaging/              # OrderEventConsumer, PaymentEventPublisher
 │   └── service/                # PaymentService, PaymentGatewaySimulator
 │
-├── notification-service/       # Consume todos los eventos, envía emails
+├── notification-service/       # Consumes all events, sends emails
 │   ├── domain/                 # Notification, NotificationType, ProcessedEvent
 │   ├── messaging/              # NotificationEventConsumer
 │   └── service/                # NotificationService, EmailTemplateBuilder
 │
 ├── infrastructure/
 │   ├── rabbitmq/rabbitmq.conf
-│   └── mysql/                  # Init scripts por base de datos
+│   └── mysql/                  # Init scripts per database
 │
-├── docker-compose.yml          # Orquestación completa (12 contenedores)
-└── test-flow.sh                # Script E2E automatizado
+├── docker-compose.yml          # Full orchestration (12 containers)
+└── test-flow.sh                # Automated E2E script
 ```
 
 ---
 
 ## Quick Start
 
-**Requisitos:** Docker Desktop instalado.
+**Requirements:** Docker Desktop installed.
 
 ```bash
-# 1. Clonar el repositorio
+# 1. Clone the repository
 git clone https://github.com/ToniniTech/Event-Driven-E-commerce.git
 cd Event-Driven-E-commerce
 
-# 2. Levantar toda la infraestructura
+# 2. Bring up the whole infrastructure
 docker-compose up --build -d
 
-# 3. Verificar que todo está healthy (~2 minutos)
+# 3. Check everything is healthy (~2 minutes)
 docker-compose ps
 
-# 4. Ver logs en tiempo real
+# 4. Follow logs in real time
 docker-compose logs -f order-service payment-service notification-service product-service
 
-# 5. Explorar las trazas distribuidas
+# 5. Explore the distributed traces
 #    Zipkin UI → http://localhost:9411
 ```
 
 ---
 
-## Cómo testear el flujo completo
+## Test the flow with Postman (quick path)
 
-### Paso 1 — Registrar un usuario
+The fastest way to see the whole system in action. The collection chains the entire flow automatically: it captures the JWT at login and the `orderId` from the created order, so you never copy tokens by hand.
+
+**Requirement:** the system must be running (`docker-compose up --build -d`).
+
+1. Import the two files from the [`/postman`](./postman) folder into Postman:
+    - `ecommerce-events.postman_collection.json`
+    - `ecommerce-events-local.postman_environment.json`
+2. Select the **ecommerce-events-local** environment from the dropdown (top right). *Without this, the variables won't resolve.*
+3. Open the **End-to-End Flow** folder and run it in order (or use the **Runner** to fire the whole sequence):
+
+   | # | Request | What it does |
+      |---|---------|--------------|
+   | 1 | register user | Creates the user and **stores the JWT** automatically |
+   | 2 | create order | Creates the order and **stores the `orderId`** automatically |
+   | 3 | get order by id | Order status (`PENDING` → `PAID`) |
+   | 4 | get payment by id | Payment result |
+   | 5 | get notification by orderId | Notifications generated from events |
+
+> **Note on the async flow:** steps 4 and 5 depend on events traveling through RabbitMQ after the order is created. If you query immediately and they aren't there yet, wait 1–2 seconds and retry — that small delay **is** the event-driven nature of the system, not a bug.
+
+Prefer curl? The same flow, step by step, is below.
+
+---
+
+## How to test the full flow (curl)
+
+### Step 1 — Register a user
 
 ```bash
 curl -X POST http://localhost:8084/api/auth/register \
@@ -232,7 +258,7 @@ curl -X POST http://localhost:8084/api/auth/register \
   }'
 ```
 
-Respuesta:
+Response:
 ```json
 {
   "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
@@ -243,9 +269,9 @@ Respuesta:
 }
 ```
 
-### Paso 2 — Crear una orden
+### Step 2 — Create an order
 
-El `customerId` y el `customerEmail` se extraen del JWT automáticamente. El cliente solo envía `productId` + `quantity`; el precio y el nombre se resuelven desde Product Service.
+The `customerId` and `customerEmail` are extracted from the JWT automatically. The client only sends `productId` + `quantity`; the price and name are resolved from Product Service.
 
 ```bash
 curl -X POST http://localhost:8081/api/orders \
@@ -259,41 +285,41 @@ curl -X POST http://localhost:8081/api/orders \
   }'
 ```
 
-> **Idempotencia (opcional):** para protegerte contra doble-click en el frontend, envía un header `Idempotency-Key`. Si repites la misma key, la segunda petición se rechaza con `409 Conflict`.
+> **Idempotency (optional):** to protect against a double-click on the frontend, send an `Idempotency-Key` header. If you repeat the same key, the second request is rejected with `409 Conflict`.
 >
 > ```bash
 >   -H "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000"
 > ```
 
-### Paso 3 — Consultar estado de la orden
+### Step 3 — Check the order status
 
 ```bash
 curl http://localhost:8081/api/orders/{orderId} \
   -H "Authorization: Bearer <accessToken>"
 ```
 
-Estado asíncrono: `PENDING` → `PAYMENT_PROCESSING` → `PAID` o `PAYMENT_FAILED`
+Async status: `PENDING` → `PAYMENT_PROCESSING` → `PAID` or `PAYMENT_FAILED`
 
-### Paso 4 — Consultar el pago
+### Step 4 — Check the payment
 
 ```bash
 curl http://localhost:8082/api/payments/order/{orderId}
 ```
 
-### Paso 5 — Ver notificaciones enviadas
+### Step 5 — See sent notifications
 
 ```bash
 curl http://localhost:8083/api/notifications/order/{orderId}
 ```
 
-### Forzar un pago fallido (determinista)
+### Force a failed payment (deterministic)
 
-El gateway simulado rechaza el pago cuando el **monto total** cumple alguna de estas reglas de negocio:
+The simulated gateway rejects the payment when the **total amount** matches one of these business rules:
 
-- **Monto > $1000** → `AMOUNT_EXCEEDS_LIMIT` (necesitas mucha cantidad, ya que ningún producto supera ~$7).
-- **Monto que termina en `.13`** → `CARD_EXPIRED`.
+- **Amount > $1000** → `AMOUNT_EXCEEDS_LIMIT` (you'd need a large quantity, since no product exceeds ~$7).
+- **Amount ending in `.13`** → `CARD_EXPIRED`.
 
-El producto `P0001` (*Cebolla 1kg*, $1.13) con `quantity: 1` da un total de $1.13 y **siempre** falla por tarjeta expirada:
+Product `P0001` (*Cebolla 1kg*, $1.13) with `quantity: 1` gives a total of $1.13 and **always** fails with card expired:
 
 ```bash
 curl -X POST http://localhost:8081/api/orders \
@@ -304,58 +330,65 @@ curl -X POST http://localhost:8081/api/orders \
   }'
 ```
 
-En cualquier otro caso, el gateway aprueba ~80% de las veces (`payment.gateway.success-rate`).
+In any other case, the gateway approves ~80% of the time (`payment.gateway.success-rate`).
 
 ---
 
-## Endpoints de administración
+## Admin endpoints
 
-Requieren JWT con rol `ADMIN`. El usuario admin se crea automáticamente al iniciar el servicio (ver `DataSeeder`).
+Require a JWT with the `ADMIN` role. The admin user is created automatically when the service starts (see `DataSeeder`).
 
-> El email y la contraseña del admin deberían inyectarse por variables de entorno (`ADMIN_EMAIL` / `ADMIN_PASSWORD`) antes de exponer el repo; en el estado actual vienen con un valor por defecto en el código.
+### Admin credentials (demo)
 
-### Login como admin
+The admin user is created at startup with these default credentials:
+
+- **Email:** `admin@ecommerce.local`
+- **Password:** `neymarsantos123`
+
+For a real deployment, override them with the `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment variables.
+
+### Login as admin
 
 ```bash
 curl -X POST http://localhost:8084/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "anthony.viveros@admin.com",
-    "password": "<ADMIN_PASSWORD>"
+    "email": "admin@ecommerce.local",
+    "password": "neymarsantos123"
   }'
 ```
 
-### Bloquear una cuenta
+### Lock an account
 
-Desactiva el usuario y revoca todos sus refresh tokens. La cuenta queda bloqueada tras **3 intentos de login fallidos** o manualmente con este endpoint.
+Deactivates the user and revokes all their refresh tokens. The account is locked after **3 failed login attempts** or manually with this endpoint.
 
 ```bash
 curl -X PATCH http://localhost:8084/api/auth/admin/lockUser/{customerId} \
   -H "Authorization: Bearer <adminAccessToken>"
 ```
 
-### Desbloquear una cuenta
+### Unlock an account
 
 ```bash
 curl -X PATCH http://localhost:8084/api/auth/admin/unlockUser/{customerId} \
   -H "Authorization: Bearer <adminAccessToken>"
 ```
 
-Ambos endpoints retornan `204 No Content` si la operación fue exitosa.
+Both endpoints return `204 No Content` if the operation succeeds.
 
 ---
 
-## Catálogo de productos
+## Product catalog
 
-El catálogo lo sirve **Product Service** (`:8085`) y se carga desde `products_300.csv` al arrancar, mediante un import idempotente (UPSERT por `productId`): reiniciar el servicio no duplica filas.
+The catalog is served by **Product Service** (`:8085`) and is loaded from `products_300.csv` at startup via an idempotent import (UPSERT by `productId`): restarting the service does not duplicate rows.
 
-- **300 productos** de abarrotes, con IDs `P0001` … `P0300`.
-- Precios entre **$0.99 y $7.47**.
-- Cada producto tiene `stock`, un flag `active` (soft delete) y una versión `@Version` para optimistic locking.
+- **300 products** (grocery items), with IDs `P0001` … `P0300`.
+- Prices between **$0.99 and $7.47**.
+- Each product has `stock`, an `active` flag (soft delete), and a `@Version` for optimistic locking.
 
-Ejemplos reales del catálogo:
+Real examples from the catalog:
 
-| productId | Nombre | Precio | Stock |
+| productId | Name | Price | Stock |
 |-----------|--------|--------|-------|
 | P0001 | Cebolla 1kg | $1.13 | 7 |
 | P0002 | Chocolate 100g | $2.20 | 63 |
@@ -363,28 +396,28 @@ Ejemplos reales del catálogo:
 | P0149 | Leche entera 1L | $2.64 | 10 |
 | P0300 | Carne molida 500g | $6.04 | 91 |
 
-Explorar el catálogo por API:
+Explore the catalog via API:
 
 ```bash
-# Listado paginado (?active=true|false opcional)
+# Paginated list (?active=true|false optional)
 curl "http://localhost:8085/api/products?page=0&size=10"
 
-# Un producto puntual
+# A single product
 curl http://localhost:8085/api/products/P0002
 ```
 
 ---
 
-## Servicios y puertos
+## Services and ports
 
-| Servicio | URL |
+| Service | URL |
 |----------|-----|
 | Auth Service | http://localhost:8084 |
 | Order Service | http://localhost:8081 |
 | Payment Service | http://localhost:8082 |
 | Notification Service | http://localhost:8083 |
 | Product Service | http://localhost:8085 |
-| Zipkin (trazas) | http://localhost:9411 |
+| Zipkin (traces) | http://localhost:9411 |
 | RabbitMQ Management UI | http://localhost:15672 — guest/guest |
 | Auth DB | localhost:3310 — authuser/authpass |
 | Order DB | localhost:3307 — orderuser/orderpass |
@@ -394,40 +427,40 @@ curl http://localhost:8085/api/products/P0002
 
 ---
 
-## Revisar las bases de datos
+## Inspect the databases
 
 ```sql
--- Auth DB (puerto 3310)
+-- Auth DB (port 3310)
 SELECT customer_id, email, first_name, role, created_at FROM users;
 
--- Order DB (puerto 3307)
+-- Order DB (port 3307)
 SELECT o.order_id, o.customer_id, o.status, o.total_amount, o.created_at,
-       GROUP_CONCAT(i.product_name SEPARATOR ', ') AS productos
+       GROUP_CONCAT(i.product_name SEPARATOR ', ') AS products
 FROM orders o
 LEFT JOIN order_items i ON o.id = i.order_id
 GROUP BY o.id ORDER BY o.created_at DESC;
 
--- Payment DB (puerto 3308)
+-- Payment DB (port 3308)
 SELECT payment_id, order_id, status, amount, failure_reason, created_at
 FROM payments ORDER BY created_at DESC;
 
--- Notification DB (puerto 3309)
+-- Notification DB (port 3309)
 SELECT notification_type, status, recipient_email, sent_at
 FROM notifications ORDER BY created_at DESC;
 
--- Product DB (puerto 3311)
+-- Product DB (port 3311)
 SELECT product_id, name, price, stock, is_active
 FROM products ORDER BY product_id LIMIT 20;
 ```
 
 ---
 
-## Parar el sistema
+## Stop the system
 
 ```bash
-# Parar contenedores (conserva datos)
+# Stop containers (keeps data)
 docker-compose down
 
-# Inicio limpio — borra todos los datos
+# Clean start — deletes all data
 docker-compose down -v
 ```
