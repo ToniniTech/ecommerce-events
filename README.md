@@ -227,7 +227,7 @@ The fastest way to see the whole system in action. The collection chains the ent
     - `ecommerce-events.postman_collection.json`
     - `ecommerce-events-local.postman_environment.json`
 2. Select the **ecommerce-events-local** environment from the dropdown (top right). *Without this, the variables won't resolve.*
-3. Open the **End-to-End Flow** folder and run it in order (or use the **Runner** to fire the whole sequence):
+3. Open the **End-to-End Flow** folder and run it in order:
 
    | # | Request | What it does |
       |---|---------|--------------|
