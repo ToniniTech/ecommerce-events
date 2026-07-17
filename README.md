@@ -343,7 +343,7 @@ Require a JWT with the `ADMIN` role. The admin user is created automatically whe
 The admin user is created at startup with these default credentials:
 
 - **Email:** `admin@ecommerce.local`
-- **Password:** `changeme123`
+- **Password:** `neymarsantos123`
 
 For a real deployment, override them with the `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment variables.
 
@@ -354,7 +354,7 @@ curl -X POST http://localhost:8084/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@ecommerce.local",
-    "password": "changeme123"
+    "password": "neymarsantos123"
   }'
 ```
 
