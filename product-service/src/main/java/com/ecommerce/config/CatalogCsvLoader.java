@@ -128,7 +128,6 @@ public class CatalogCsvLoader implements ApplicationRunner {
 
     /**
      * Parse a CSV record and enforce the domain invariants.
-     * NOTE: the CSV header uses "active" (not "is_active"); the "id" column is ignored.
      */
     private ParsedRow parseAndValidate(CSVRecord record) {
         String productId = record.isMapped("productId") ? record.get("productId") : null;
