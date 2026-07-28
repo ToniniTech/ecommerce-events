@@ -1,0 +1,98 @@
+# notification-db.yaml — mismo patrón que auth-db.yaml.
+# Usa el secret notification-db-secret (notifuser/notifpass) que ya existe
+# en secrets.yaml, y el init.sql real de infrastructure/mysql/notification-db-init.sql
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notification-db-init
+  namespace: ecommerce
+data:
+  init.sql: |
+    -- notification-db initialization
+    CREATE DATABASE IF NOT EXISTS notification_db
+        CHARACTER SET utf8mb4
+        COLLATE utf8mb4_unicode_ci;
+
+    GRANT ALL PRIVILEGES ON notification_db.* TO 'notifuser'@'%';
+    FLUSH PRIVILEGES;
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-db
+  namespace: ecommerce
+spec:
+  clusterIP: None
+  selector:
+    app: notification-db
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: notification-db
+  namespace: ecommerce
+spec:
+  serviceName: notification-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-db
+  template:
+    metadata:
+      labels:
+        app: notification-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          args:
+            - "--character-set-server=utf8mb4"
+            - "--collation-server=utf8mb4_unicode_ci"
+            - "--default-authentication-plugin=mysql_native_password"
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: notification-db-secret, key: MYSQL_ROOT_PASSWORD }
+            - name: MYSQL_DATABASE
+              value: notification_db
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef: { name: notification-db-secret, key: MYSQL_USER }
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: notification-db-secret, key: MYSQL_PASSWORD }
+          volumeMounts:
+            - name: notification-db-data
+              mountPath: /var/lib/mysql
+            - name: init-script
+              mountPath: /docker-entrypoint-initdb.d
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+      volumes:
+        - name: init-script
+          configMap:
+            name: notification-db-init
+  volumeClaimTemplates:
+    - metadata:
+        name: notification-db-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

@@ -1,0 +1,78 @@
+# product-db.yaml — mismo patrón que auth-db.yaml, pero más simple:
+# en docker-compose.yml, product-db NO monta ningún init.sql — el propio
+# MYSQL_DATABASE crea el schema vacío y Hibernate (ddl-auto: update) crea
+# la tabla "products" al primer arranque. Por eso aquí no hay ConfigMap.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-db
+  namespace: ecommerce
+spec:
+  clusterIP: None
+  selector:
+    app: product-db
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: product-db
+  namespace: ecommerce
+spec:
+  serviceName: product-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-db
+  template:
+    metadata:
+      labels:
+        app: product-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          args:
+            - "--character-set-server=utf8mb4"
+            - "--collation-server=utf8mb4_unicode_ci"
+            - "--default-authentication-plugin=mysql_native_password"
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: product-db-secret, key: MYSQL_ROOT_PASSWORD }
+            - name: MYSQL_DATABASE
+              value: product_db
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef: { name: product-db-secret, key: MYSQL_USER }
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: product-db-secret, key: MYSQL_PASSWORD }
+          volumeMounts:
+            - name: product-db-data
+              mountPath: /var/lib/mysql
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: product-db-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
