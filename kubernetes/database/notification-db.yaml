@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: order-db
+  name: notification-db
   namespace: ecommerce
 spec:
   clusterIP: None
   selector:
-    app: order-db
+    app: notification-db
   ports:
     - port: 3306
       targetPort: 3306
@@ -14,18 +14,18 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: order-db
+  name: notification-db
   namespace: ecommerce
 spec:
-  serviceName: order-db
+  serviceName: notification-db
   replicas: 1
   selector:
     matchLabels:
-      app: order-db
+      app: notification-db
   template:
     metadata:
       labels:
-        app: order-db
+        app: notification-db
     spec:
       containers:
         - name: mysql
@@ -39,33 +39,39 @@ spec:
           env:
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
-                secretKeyRef: { name: order-db-secret, key: MYSQL_ROOT_PASSWORD }
+                secretKeyRef: { name: notification-db-secret, key: MYSQL_ROOT_PASSWORD }
             - name: MYSQL_DATABASE
-              value: order_db
+              value: notification_db
             - name: MYSQL_USER
               valueFrom:
-                secretKeyRef: { name: order-db-secret, key: MYSQL_USER }
+                secretKeyRef: { name: notification-db-secret, key: MYSQL_USER }
             - name: MYSQL_PASSWORD
               valueFrom:
-                secretKeyRef: { name: order-db-secret, key: MYSQL_PASSWORD }
+                secretKeyRef: { name: notification-db-secret, key: MYSQL_PASSWORD }
           volumeMounts:
-            - name: order-db-data
+            - name: notification-db-data
               mountPath: /var/lib/mysql
+            - name: init-script
+              mountPath: /docker-entrypoint-initdb.d
           readinessProbe:
             exec:
               command: ["mysqladmin", "ping", "-h", "localhost"]
             initialDelaySeconds: 20
             periodSeconds: 10
-            timeoutSeconds: 10
+            timeoutSeconds: 5
           livenessProbe:
             exec:
               command: ["mysqladmin", "ping", "-h", "localhost"]
             initialDelaySeconds: 30
             periodSeconds: 15
-            timeoutSeconds: 10
+            timeoutSeconds: 5
+      volumes:
+        - name: init-script
+          configMap:
+            name: notification-db-init
   volumeClaimTemplates:
     - metadata:
-        name: order-db-data
+        name: notification-db-data
       spec:
         accessModes: ["ReadWriteOnce"]
         resources:

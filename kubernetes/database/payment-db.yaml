@@ -1,31 +1,12 @@
-# notification-db.yaml — mismo patrón que auth-db.yaml.
-# Usa el secret notification-db-secret (notifuser/notifpass) que ya existe
-# en secrets.yaml, y el init.sql real de infrastructure/mysql/notification-db-init.sql
-
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: notification-db-init
-  namespace: ecommerce
-data:
-  init.sql: |
-    -- notification-db initialization
-    CREATE DATABASE IF NOT EXISTS notification_db
-        CHARACTER SET utf8mb4
-        COLLATE utf8mb4_unicode_ci;
-
-    GRANT ALL PRIVILEGES ON notification_db.* TO 'notifuser'@'%';
-    FLUSH PRIVILEGES;
----
 apiVersion: v1
 kind: Service
 metadata:
-  name: notification-db
+  name: payment-db
   namespace: ecommerce
 spec:
   clusterIP: None
   selector:
-    app: notification-db
+    app: payment-db
   ports:
     - port: 3306
       targetPort: 3306
@@ -33,18 +14,18 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: notification-db
+  name: payment-db
   namespace: ecommerce
 spec:
-  serviceName: notification-db
+  serviceName: payment-db
   replicas: 1
   selector:
     matchLabels:
-      app: notification-db
+      app: payment-db
   template:
     metadata:
       labels:
-        app: notification-db
+        app: payment-db
     spec:
       containers:
         - name: mysql
@@ -58,17 +39,17 @@ spec:
           env:
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
-                secretKeyRef: { name: notification-db-secret, key: MYSQL_ROOT_PASSWORD }
+                secretKeyRef: { name: payment-db-secret, key: MYSQL_ROOT_PASSWORD }
             - name: MYSQL_DATABASE
-              value: notification_db
+              value: payment_db
             - name: MYSQL_USER
               valueFrom:
-                secretKeyRef: { name: notification-db-secret, key: MYSQL_USER }
+                secretKeyRef: { name: payment-db-secret, key: MYSQL_USER }
             - name: MYSQL_PASSWORD
               valueFrom:
-                secretKeyRef: { name: notification-db-secret, key: MYSQL_PASSWORD }
+                secretKeyRef: { name: payment-db-secret, key: MYSQL_PASSWORD }
           volumeMounts:
-            - name: notification-db-data
+            - name: payment-db-data
               mountPath: /var/lib/mysql
             - name: init-script
               mountPath: /docker-entrypoint-initdb.d
@@ -77,20 +58,20 @@ spec:
               command: ["mysqladmin", "ping", "-h", "localhost"]
             initialDelaySeconds: 20
             periodSeconds: 10
-            timeoutSeconds: 5
+            timeoutSeconds: 10
           livenessProbe:
             exec:
               command: ["mysqladmin", "ping", "-h", "localhost"]
             initialDelaySeconds: 30
             periodSeconds: 15
-            timeoutSeconds: 5
+            timeoutSeconds: 10
       volumes:
         - name: init-script
           configMap:
-            name: notification-db-init
+            name: payment-db-init
   volumeClaimTemplates:
     - metadata:
-        name: notification-db-data
+        name: payment-db-data
       spec:
         accessModes: ["ReadWriteOnce"]
         resources:

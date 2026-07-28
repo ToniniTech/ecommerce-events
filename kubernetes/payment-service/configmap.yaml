@@ -1,10 +1,11 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: auth-service-config
+  name: payment-service-config
   namespace: ecommerce
 data:
-  MYSQL_HOST: auth-db
-  JWT_EXPIRATION_MS: "1800000"
-  JWT_REFRESH_MS: "604800000"
+  MYSQL_HOST: payment-db
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+  MAIL_ENABLED: "false"
   ZIPKIN_HOST: zipkin

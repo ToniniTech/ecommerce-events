@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: order-db
+  name: auth-db
   namespace: ecommerce
 spec:
   clusterIP: None
   selector:
-    app: order-db
+    app: auth-db
   ports:
     - port: 3306
       targetPort: 3306
@@ -14,18 +14,18 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: order-db
+  name: auth-db
   namespace: ecommerce
 spec:
-  serviceName: order-db
+  serviceName: auth-db
   replicas: 1
   selector:
     matchLabels:
-      app: order-db
+      app: auth-db
   template:
     metadata:
       labels:
-        app: order-db
+        app: auth-db
     spec:
       containers:
         - name: mysql
@@ -39,33 +39,43 @@ spec:
           env:
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
-                secretKeyRef: { name: order-db-secret, key: MYSQL_ROOT_PASSWORD }
+                secretKeyRef: { name: auth-db-secret, key: MYSQL_ROOT_PASSWORD }
             - name: MYSQL_DATABASE
-              value: order_db
+              value: auth_db
             - name: MYSQL_USER
               valueFrom:
-                secretKeyRef: { name: order-db-secret, key: MYSQL_USER }
+                secretKeyRef: { name: auth-db-secret, key: MYSQL_USER }
             - name: MYSQL_PASSWORD
               valueFrom:
-                secretKeyRef: { name: order-db-secret, key: MYSQL_PASSWORD }
+                secretKeyRef: { name: auth-db-secret, key: MYSQL_PASSWORD }
           volumeMounts:
-            - name: order-db-data
+            - name: auth-db-data
               mountPath: /var/lib/mysql
+            - name: init-script
+              mountPath: /docker-entrypoint-initdb.d
+          # Note: no credentials in the probe (unlike the Compose healthcheck)
+          # to avoid exposing the password in `kubectl describe`.
+          # It simply confirms that mysqld is alive—which is what the
+          # other pods need to know in order to connect.
           readinessProbe:
             exec:
               command: ["mysqladmin", "ping", "-h", "localhost"]
             initialDelaySeconds: 20
             periodSeconds: 10
-            timeoutSeconds: 10
+            timeoutSeconds: 5
           livenessProbe:
             exec:
               command: ["mysqladmin", "ping", "-h", "localhost"]
             initialDelaySeconds: 30
             periodSeconds: 15
-            timeoutSeconds: 10
+            timeoutSeconds: 5
+      volumes:
+        - name: init-script
+          configMap:
+            name: auth-db-init
   volumeClaimTemplates:
     - metadata:
-        name: order-db-data
+        name: auth-db-data
       spec:
         accessModes: ["ReadWriteOnce"]
         resources:
