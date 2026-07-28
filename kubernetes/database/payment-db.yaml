@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-db
+  namespace: ecommerce
+spec:
+  clusterIP: None
+  selector:
+    app: payment-db
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: payment-db
+  namespace: ecommerce
+spec:
+  serviceName: payment-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-db
+  template:
+    metadata:
+      labels:
+        app: payment-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          args:
+            - "--character-set-server=utf8mb4"
+            - "--collation-server=utf8mb4_unicode_ci"
+            - "--default-authentication-plugin=mysql_native_password"
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: payment-db-secret, key: MYSQL_ROOT_PASSWORD }
+            - name: MYSQL_DATABASE
+              value: payment_db
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef: { name: payment-db-secret, key: MYSQL_USER }
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: payment-db-secret, key: MYSQL_PASSWORD }
+          volumeMounts:
+            - name: payment-db-data
+              mountPath: /var/lib/mysql
+            - name: init-script
+              mountPath: /docker-entrypoint-initdb.d
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 10
+      volumes:
+        - name: init-script
+          configMap:
+            name: payment-db-init
+  volumeClaimTemplates:
+    - metadata:
+        name: payment-db-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

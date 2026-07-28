@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: payment-service-config
+  namespace: ecommerce
+data:
+  MYSQL_HOST: payment-db
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
+  MAIL_ENABLED: "false"
+  ZIPKIN_HOST: zipkin
