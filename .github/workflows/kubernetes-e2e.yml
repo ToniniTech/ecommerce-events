@@ -69,13 +69,13 @@ jobs:
 
       - name: Wait for infrastructure
         run: |
-          kubectl rollout status statefulset/auth-db --namespace ecommerce --timeout=20m
-          kubectl rollout status statefulset/order-db --namespace ecommerce --timeout=20m
-          kubectl rollout status statefulset/payment-db --namespace ecommerce --timeout=20m
-          kubectl rollout status statefulset/notification-db --namespace ecommerce --timeout=20m
-          kubectl rollout status statefulset/product-db --namespace ecommerce --timeout=20m
-          kubectl rollout status statefulset/rabbitmq --namespace ecommerce --timeout=20m
-          kubectl rollout status deployment/zipkin --namespace ecommerce --timeout=20m
+          kubectl rollout status statefulset/auth-db --namespace ecommerce --timeout=5m
+          kubectl rollout status statefulset/order-db --namespace ecommerce --timeout=5m
+          kubectl rollout status statefulset/payment-db --namespace ecommerce --timeout=5m
+          kubectl rollout status statefulset/notification-db --namespace ecommerce --timeout=5m
+          kubectl rollout status statefulset/product-db --namespace ecommerce --timeout=5m
+          kubectl rollout status statefulset/rabbitmq --namespace ecommerce --timeout=5m
+          kubectl rollout status deployment/zipkin --namespace ecommerce --timeout=5m
 
       - name: Deploy application services
         run: |

@@ -51,12 +51,6 @@ spec:
           volumeMounts:
             - name: auth-db-data
               mountPath: /var/lib/mysql
-            - name: init-script
-              mountPath: /docker-entrypoint-initdb.d
-          # Note: no credentials in the probe (unlike the Compose healthcheck)
-          # to avoid exposing the password in `kubectl describe`.
-          # It simply confirms that mysqld is alive—which is what the
-          # other pods need to know in order to connect.
           startupProbe:
             exec:
               command:
@@ -90,10 +84,6 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 15
             timeoutSeconds: 10
-      volumes:
-        - name: init-script
-          configMap:
-            name: auth-db-init
   volumeClaimTemplates:
     - metadata:
         name: auth-db-data

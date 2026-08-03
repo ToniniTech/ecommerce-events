@@ -51,8 +51,6 @@ spec:
           volumeMounts:
             - name: payment-db-data
               mountPath: /var/lib/mysql
-            - name: init-script
-              mountPath: /docker-entrypoint-initdb.d
           startupProbe:
             exec:
               command:
@@ -86,10 +84,6 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 15
             timeoutSeconds: 10
-      volumes:
-        - name: init-script
-          configMap:
-            name: payment-db-init
   volumeClaimTemplates:
     - metadata:
         name: payment-db-data

@@ -84,10 +84,6 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 15
             timeoutSeconds: 10
-      volumes:
-        - name: init-script
-          configMap:
-            name: product-db-init
   volumeClaimTemplates:
     - metadata:
         name: product-db-data
