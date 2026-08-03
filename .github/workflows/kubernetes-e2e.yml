@@ -122,6 +122,7 @@ jobs:
           npx --yes newman@6.2.1 run \
             postman/kubernetes-workflow/e2e-kubernetes.postman_collection.json \
             --environment postman/kubernetes-workflow/kubernetes-enviroment.json \
+            --delay-request 1000 \
             --reporters cli,junit \
             --reporter-junit-export newman-results.xml
 
