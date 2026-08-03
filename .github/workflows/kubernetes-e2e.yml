@@ -53,7 +53,7 @@ jobs:
           helm install traefik traefik/traefik \
             --namespace traefik \
             --create-namespace \
-            --set service.type=ClusterIP \
+            --set service.spec.type=ClusterIP \
             --set providers.kubernetesGateway.enabled=true \
             --set gateway.listeners.web.namespacePolicy.from=All \
             --wait \
