@@ -87,11 +87,11 @@ jobs:
 
       - name: Wait for application services
         run: |
-          kubectl rollout status deployment/auth-service --namespace ecommerce --timeout=5m
-          kubectl rollout status deployment/order-service --namespace ecommerce --timeout=5m
-          kubectl rollout status deployment/notification-service --namespace ecommerce --timeout=5m
-          kubectl rollout status deployment/payment-service --namespace ecommerce --timeout=5m
-          kubectl rollout status deployment/product-service --namespace ecommerce --timeout=5m
+          kubectl rollout status deployment/auth-service --namespace ecommerce --timeout=20m
+          kubectl rollout status deployment/order-service --namespace ecommerce --timeout=20m
+          kubectl rollout status deployment/notification-service --namespace ecommerce --timeout=20m
+          kubectl rollout status deployment/payment-service --namespace ecommerce --timeout=20m
+          kubectl rollout status deployment/product-service --namespace ecommerce --timeout=20m
 
       - name: Deploy Gateway routes
         run: |
