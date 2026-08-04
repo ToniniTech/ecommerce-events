@@ -9,6 +9,7 @@
 ![Spring Security](https://img.shields.io/badge/Spring_Security-6DB33F?style=flat&logo=springsecurity&logoColor=white)
 ![Zipkin](https://img.shields.io/badge/Tracing-Zipkin-FF6C37?style=flat&logo=jaeger&logoColor=white)
 [![CI](https://github.com/ToniniTech/Event-Driven-E-commerce/actions/workflows/maven.yml/badge.svg)](https://github.com/ToniniTech/Event-Driven-E-commerce/actions/workflows/maven.yml)
+[![Kubernetes E2E](https://github.com/ToniniTech/Event-Driven-E-commerce/actions/workflows/kubernetes-e2e.yml/badge.svg)](https://github.com/ToniniTech/Event-Driven-E-commerce/actions/workflows/kubernetes-e2e.yml)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-Kind_Local_Deployment-326CE5?style=flat&logo=kubernetes&logoColor=white)
 
 E-commerce microservices system with an event-driven architecture, mostly asynchronous communication over RabbitMQ, a synchronous catalog isolated via REST, stateless JWT authentication, and distributed tracing with OpenTelemetry + Zipkin.
@@ -38,12 +39,11 @@ The only synchronous coupling is **deliberate**: Order Service queries Product S
 | Security | Spring Security + JWT (JJWT 0.12)                            |
 | Persistence | Spring Data JPA + MySQL 8.0                                  |
 | Observability | Micrometer Tracing + OpenTelemetry + Zipkin                  |
-| Testing | JUnit 5 + Testcontainers                                     |
+| Testing | JUnit 5, Testcontainers, Postman + Newman E2E |
 | Build | Maven 3                                                      |
 | Containerization | Docker                                                       |
-| Orchestration | Kubernetes (Kind)                                            |
-| CI | GitHub Actions                                               |
-
+| Orchestration | Kubernetes, Kind, Traefik Gateway API |
+| CI | GitHub Actions: service builds + ephemeral Kubernetes E2E |
 ---
 
 ## Architecture
@@ -169,13 +169,15 @@ Prefer curl? follow the:
 
 ## Kubernetes deployment
 
-The complete platform has been deployed and validated locally on Kind,
-including all five microservices, MySQL databases, RabbitMQ, persistent
-storage, health probes, resource limits and distributed tracing.
+The complete platform runs locally on Kind behind Traefik using Kubernetes
+Gateway API. It includes all five microservices, isolated MySQL databases,
+RabbitMQ, persistent storage, health probes, resource limits and distributed
+tracing.
 
-The complete purchase flow was validated end to end using Postman and
-`kubectl port-forward`.
+Every pull request can be deployed to an ephemeral Kind cluster and validated
+through Traefik using the complete Newman end-to-end workflow.
 
+[View the Kubernetes E2E workflow](.github/workflows/kubernetes-e2e.yml).
 ---
 
 ## Deployment (AWS EC2)
@@ -195,4 +197,5 @@ Docker Compose.
 - [Authentication and administration](docs/authentication.md)
 - [Product catalog](docs/product-catalog.md)
 - [AWS deployment](docs/aws-deployment.md)
-- [CI workflow](.github/workflows/maven.yml)
+- [Service CI workflow](.github/workflows/maven.yml)
+- [Kubernetes E2E workflow](.github/workflows/kubernetes-e2e.yml)
