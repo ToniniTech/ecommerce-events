@@ -153,3 +153,15 @@ jobs:
           path: newman-results.xml
           if-no-files-found: ignore
           retention-days: 7
+
+      - name: Publish successful E2E summary
+        run: |
+          {
+            echo "## ✅ Kubernetes E2E validation passed"
+            echo ""
+            echo "- ✅ Docker images built"
+            echo "- ✅ Kind cluster created"
+            echo "- ✅ Kubernetes manifests deployed"
+            echo "- ✅ Traefik Gateway validated"
+            echo "- ✅ Newman collection completed"
+          } >> "$GITHUB_STEP_SUMMARY"
