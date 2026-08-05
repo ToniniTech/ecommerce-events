@@ -155,13 +155,18 @@ jobs:
           retention-days: 7
 
       - name: Publish successful E2E summary
+        if: success()
+        shell: bash
         run: |
           {
             echo "## ✅ Kubernetes E2E validation passed"
             echo ""
-            echo "- ✅ Docker images built"
             echo "- ✅ Kind cluster created"
-            echo "- ✅ Kubernetes manifests deployed"
-            echo "- ✅ Traefik Gateway validated"
-            echo "- ✅ Newman collection completed"
+            echo "- ✅ Service images built and loaded"
+            echo "- ✅ Gateway API and Traefik installed"
+            echo "- ✅ Infrastructure and application deployed"
+            echo "- ✅ Gateway routes accepted"
+            echo "- ✅ Newman E2E workflow completed"
+            echo ""
+            echo "**Commit:** \`${GITHUB_SHA::7}\`"
           } >> "$GITHUB_STEP_SUMMARY"
